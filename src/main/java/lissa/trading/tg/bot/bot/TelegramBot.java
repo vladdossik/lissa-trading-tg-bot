@@ -4,7 +4,8 @@ import lissa.trading.lissa.auth.lib.dto.UserInfoDto;
 import lissa.trading.lissa.auth.lib.security.EncryptionService;
 import lissa.trading.tg.bot.model.UserEntity;
 import lissa.trading.tg.bot.payload.request.SignupRequest;
-import lissa.trading.tg.bot.service.user.UserService;
+import lissa.trading.tg.bot.payload.response.UserRegistrationResponse;
+import lissa.trading.tg.bot.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -12,7 +13,6 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -21,8 +21,8 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     private final String botName;
     private final UserService userService;
-    private final Map<Long, UserState> userStates = new HashMap<>();  // Состояния пользователей
-    private final Map<Long, UserEntity> userEntities = new HashMap<>(); // Временное хранилище для сущностей пользователей
+    private final Map<Long, UserState> userStates = new HashMap<>();
+    private final Map<Long, UserEntity> userEntities = new HashMap<>();
 
     public TelegramBot(String botName, String botToken, UserService userService) {
         super(botToken);
@@ -56,9 +56,10 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     private void handleCommand(Long chatId, BotCommand command, Update update) {
         switch (command) {
-            case START -> promptForToken(update);
+            case START -> promptForToken(chatId, update);
             case TOKEN -> requestNewToken(chatId);
             case INFO -> sendInfo(chatId, update);
+            default -> sendMessage(chatId, "Unknown command.");
         }
     }
 
@@ -71,20 +72,15 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    // Метод запроса токена
-    private void promptForToken(Update update) {
-        Long chatId = update.getMessage().getChatId();
+    private void promptForToken(Long chatId, Update update) {
         String telegramNickname = getSafeValue(update.getMessage().getFrom().getUserName());
 
-        if (userService.userExistsByTelegramNickname(telegramNickname)) {
-            UserInfoDto user = userService.getUserByTelegramNickname(telegramNickname);
-            respondBasedOnTokenPresence(chatId, user);
-        } else {
-            initiateTokenRegistration(chatId);
-        }
+        userService.getUserByTelegramNickname(telegramNickname).ifPresentOrElse(
+                user -> respondBasedOnTokenPresence(chatId, user),
+                () -> initiateTokenRegistration(chatId)
+        );
     }
 
-    // Обработка токена пользователя
     private void processToken(Long chatId, String token, Update update) {
         if (isValidToken(token)) {
             UserEntity user = new UserEntity();
@@ -100,46 +96,60 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    // Обработка пароля пользователя
     private void processPassword(Long chatId, String password) {
         if (isValidPassword(password)) {
             UserEntity user = getTemporaryUser(chatId);
 
+            if (user == null) {
+                resetUserSession(chatId, "Session expired. Please start again.");
+                return;
+            }
+
             user.setPassword(EncryptionService.encrypt(password));
 
-            SignupRequest signupRequest = new SignupRequest();
-            signupRequest.setFirstName(user.getFirstName());
-            signupRequest.setLastName(user.getLastName());
-            signupRequest.setTelegramNickname(user.getTelegramNickname());
-            signupRequest.setTinkoffToken(user.getTinkoffToken());
-            signupRequest.setPassword(password);
-            Set<String> roles = new HashSet<>();
-            roles.add("user");
-            signupRequest.setRole(roles);
-
-            userService.registerUser(signupRequest);
-            finalizeRegistration(chatId, "Registration complete.");
+            SignupRequest signupRequest = buildSignupRequest(user, password);
+            handleUserRegistration(chatId, signupRequest);
         } else {
             sendMessage(chatId, "Password must be at least 3 characters long. Please try again.");
         }
     }
 
+    private SignupRequest buildSignupRequest(UserEntity user, String password) {
+        return SignupRequest.builder()
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .telegramNickname(user.getTelegramNickname())
+                .tinkoffToken(user.getTinkoffToken())
+                .password(password)
+                .role(Set.of("user"))
+                .build();
+    }
 
-    // Запрос нового токена
+    private void handleUserRegistration(Long chatId, SignupRequest signupRequest) {
+        UserRegistrationResponse response = userService.registerUser(signupRequest);
+        if (response.isSuccess()) {
+            finalizeRegistration(chatId, "Registration complete.");
+        } else {
+            sendMessage(chatId, response.getMessage());
+        }
+    }
+
     private void requestNewToken(Long chatId) {
         sendMessage(chatId, "Please provide your new Tinkoff token.");
         userStates.put(chatId, UserState.WAITING_FOR_NEW_TOKEN);
     }
 
-    // Обработка нового токена
     private void processNewToken(Long chatId, String newToken, Update update) {
         if (isValidToken(newToken)) {
             String telegramNickname = getSafeValue(update.getMessage().getFrom().getUserName());
 
-            UserInfoDto user = userService.getUserByTelegramNickname(telegramNickname);
-            userService.updateUserToken(user.getTelegramNickname(), EncryptionService.encrypt(newToken));
-
-            sendMessage(chatId, "Your Tinkoff token has been updated.");
+            userService.getUserByTelegramNickname(telegramNickname).ifPresentOrElse(
+                    user -> {
+                        userService.updateUserToken(user.getTelegramNickname(), EncryptionService.encrypt(newToken));
+                        sendMessage(chatId, "Your Tinkoff token has been updated.");
+                    },
+                    () -> sendMessage(chatId, "User not found. Please register first.")
+            );
         } else {
             sendMessage(chatId, "Invalid Tinkoff token. Please provide a valid token.");
         }
@@ -148,26 +158,23 @@ public class TelegramBot extends TelegramLongPollingBot {
     private void sendInfo(Long chatId, Update update) {
         String telegramNickname = getSafeValue(update.getMessage().getFrom().getUserName());
 
-        if (userService.userExistsByTelegramNickname(telegramNickname)) {
-            UserInfoDto userInfo = userService.getUserByTelegramNickname(telegramNickname);
-
-            sendMessage(chatId, formatUserInfo(userInfo));
-        } else {
-            sendMessage(chatId, "You are not registered in the system. Please start by providing your Tinkoff token.");
-        }
+        userService.getUserByTelegramNickname(telegramNickname).ifPresentOrElse(
+                user -> sendMessage(chatId, formatUserInfo(user)),
+                () -> sendMessage(chatId, "You are not registered in the system. Please start by providing your Tinkoff token.")
+        );
     }
 
-
-    // Вспомогательные методы
     private UserEntity getTemporaryUser(Long chatId) {
-        UserEntity user = userEntities.get(chatId);
-        if (user == null) {
-            throw new RuntimeException("User not found.");
-        }
-        return user;
+        return userEntities.get(chatId);
     }
 
     private void finalizeRegistration(Long chatId, String message) {
+        sendMessage(chatId, message);
+        userStates.remove(chatId);
+        userEntities.remove(chatId);
+    }
+
+    private void resetUserSession(Long chatId, String message) {
         sendMessage(chatId, message);
         userStates.remove(chatId);
         userEntities.remove(chatId);
@@ -194,25 +201,19 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     private String formatUserInfo(UserInfoDto userInfo) {
         return """
-               {
-                   "externalId": "%s",
-                   "firstName": "%s",
-                   "lastName": "%s",
-                   "telegramNickname": "%s",
-                   "decryptedTinkoffToken": "%s",
-                   "roles": %s
-               }
-               """.formatted(
+                User Information:
+                -----------------
+                ID: %s
+                Nickname: %s
+                Token: %s
+                """.formatted(
                 userInfo.getExternalId(),
-                userInfo.getFirstName(),
-                userInfo.getLastName(),
-                userInfo.getTelegramNickname(),
-                EncryptionService.decrypt(userInfo.getTinkoffToken()),
-                userInfo.getRoles().toString()
+                getSafeValue(userInfo.getTelegramNickname()),
+                EncryptionService.decrypt(userInfo.getTinkoffToken())
         );
     }
 
-    // Валидация
+
     private boolean isValidToken(String token) {
         return token.startsWith("t.") && token.length() == 88;
     }
@@ -221,7 +222,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         return password.length() >= 3;
     }
 
-    // Отправка сообщений
     private void sendMessage(Long chatId, String text) {
         SendMessage message = new SendMessage();
         message.setChatId(chatId.toString());
@@ -233,11 +233,10 @@ public class TelegramBot extends TelegramLongPollingBot {
         try {
             execute(message);
         } catch (TelegramApiException e) {
-            log.error("Error occurred: ", e);
+            log.error("Error sending message: {}", e.getMessage());
         }
     }
 
-    // Утилиты
     private String getSafeValue(String value) {
         return value != null ? value : "Not provided";
     }

@@ -1,4 +1,4 @@
-package lissa.trading.tg.bot.feign;
+package lissa.trading.tg.bot.tinkoff.feign;
 
 import feign.RequestInterceptor;
 import feign.RequestTemplate;

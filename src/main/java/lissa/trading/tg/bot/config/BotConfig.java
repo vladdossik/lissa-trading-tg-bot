@@ -1,7 +1,7 @@
 package lissa.trading.tg.bot.config;
 
 import lissa.trading.tg.bot.bot.TelegramBot;
-import lissa.trading.tg.bot.service.user.UserService;
+import lissa.trading.tg.bot.service.UserService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -31,7 +31,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = "password")
+@ToString(exclude = {"password", "roles"})
 public class UserEntity {
 
     @Id
