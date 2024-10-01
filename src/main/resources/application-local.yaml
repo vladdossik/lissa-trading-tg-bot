@@ -1,0 +1,43 @@
+server:
+  port: 8083
+
+bot:
+  token: "7329723325:AAHen-_d2UTugyuCGF8Q4PicgOib4RihRWc"
+  name: "lissa_trading_bot"
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/lissa-trading-db
+    username: postgres
+    password: root-password-123
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        default_schema: tg_bot_db
+
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    default-schema: tg_bot_db
+
+security:
+  internal:
+    token: Iq6Vu8Nz7Xa3Rl9Cm5YbTc2WpDf4Oj5ZfGn1Kh3
+
+cache:
+  caffeine:
+    expire-after-write: 5 # в минутах
+    maximum-size: 100
+
+integration:
+  rest:
+    auth-service-url: http://localhost:8081
+    user-service-url: http://localhost:8080
+    tinkoff-api-service-url: http://localhost:8082
+  rabbit:
+
