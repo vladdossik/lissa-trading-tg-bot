@@ -101,7 +101,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             UserEntity user = getTemporaryUser(chatId);
 
             if (user == null) {
-                resetUserSession(chatId, "Session expired. Please start again.");
+                finalizeRegistration(chatId, "Session expired. Please start again.");
                 return;
             }
 
@@ -169,12 +169,6 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private void finalizeRegistration(Long chatId, String message) {
-        sendMessage(chatId, message);
-        userStates.remove(chatId);
-        userEntities.remove(chatId);
-    }
-
-    private void resetUserSession(Long chatId, String message) {
         sendMessage(chatId, message);
         userStates.remove(chatId);
         userEntities.remove(chatId);

@@ -11,11 +11,11 @@ import lissa.trading.tg.bot.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -93,7 +93,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private Set<Role> resolveRoles(Set<String> strRoles) {
-        Set<Role> roles = strRoles == null || strRoles.isEmpty() ? new HashSet<>() : strRoles.stream()
+        Set<Role> roles = CollectionUtils.isEmpty(strRoles) ? new HashSet<>() : strRoles.stream()
                 .map(this::getRoleEnum)
                 .map(this::getRole)
                 .collect(Collectors.toSet());
