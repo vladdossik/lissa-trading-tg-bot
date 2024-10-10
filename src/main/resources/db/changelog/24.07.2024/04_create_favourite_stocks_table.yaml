@@ -1,0 +1,49 @@
+databaseChangeLog:
+  - changeSet:
+      id: 24.07.2024_04
+      author: belaquaa@mail.ru
+      changes:
+        - createTable:
+            tableName: favourite_stocks
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: ticker
+                  type: VARCHAR(50)
+              - column:
+                  name: figi
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: service_ticker
+                  type: VARCHAR(50)
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+              - column:
+                  name: instrument_type
+                  type: VARCHAR(50)
+              - column:
+                  name: currency
+                  type: VARCHAR(3)
+                  defaultValue: 'RUB'
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: favourite_stocks
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_favourite_stocks_user

@@ -1,14 +1,12 @@
-package lissa.trading.tg.bot.tinkoff.dto.stock;
+package lissa.trading.tg.bot.tinkoff.dto.account;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class FigiesDto {
-    private List<String> figies;
+public class TinkoffTokenDto {
+    private String token;
 }

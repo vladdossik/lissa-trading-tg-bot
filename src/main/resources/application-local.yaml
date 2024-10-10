@@ -11,6 +11,11 @@ spring:
     username: postgres
     password: root-password-123
     driver-class-name: org.postgresql.Driver
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
 
   jpa:
     hibernate:
@@ -39,5 +44,9 @@ integration:
     auth-service-url: http://localhost:8081
     user-service-url: http://localhost:8080
     tinkoff-api-service-url: http://localhost:8082
-  rabbit:
 
+telegram-bot:
+  notification:
+    checkPriceChangesInterval: 60000 # интервал проверки цен, миллисекунды
+    priceChangeWindowMinutes: 60 # сравнение цены за час
+    criticalPriceChangePercentage: 3 # отклонение на 3% критичное

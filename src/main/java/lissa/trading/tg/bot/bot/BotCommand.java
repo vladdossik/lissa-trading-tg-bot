@@ -1,24 +1,18 @@
 package lissa.trading.tg.bot.bot;
 
-import lombok.Getter;
-
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-@Getter
 public enum BotCommand {
     START("/start"),
     TOKEN("/token"),
     INFO("/info"),
+    FAVOURITES("/favourites"),
     UNKNOWN("");
 
-    private static final Map<String, BotCommand> COMMAND_MAP = new HashMap<>();
-
-    static {
-        for (BotCommand command : values()) {
-            COMMAND_MAP.put(command.value, command);
-        }
-    }
+    private static final Map<String, BotCommand> COMMAND_MAP = Arrays.stream(values())
+            .collect(Collectors.toMap(BotCommand::getValue, command -> command));
 
     private final String value;
 
@@ -28,5 +22,9 @@ public enum BotCommand {
 
     public static BotCommand fromValue(String value) {
         return COMMAND_MAP.getOrDefault(value, UNKNOWN);
+    }
+
+    public String getValue() {
+        return value;
     }
 }

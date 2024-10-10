@@ -8,3 +8,9 @@ databaseChangeLog:
   - include:
       file: "03_create_user_roles_table.yaml"
       relativeToChangelogFile: true
+  - include:
+      file: "04_create_favourite_stocks_table.yaml"
+      relativeToChangelogFile: true
+  - include:
+      file: "05_create_user_stock_prices_table.yaml"
+      relativeToChangelogFile: true
