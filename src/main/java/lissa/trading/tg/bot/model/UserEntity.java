@@ -10,12 +10,14 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
@@ -31,7 +33,8 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = {"password", "roles"})
+@ToString(exclude = {"password", "roles", "favouriteStocks"})
+@EqualsAndHashCode(exclude = "favouriteStocks")
 public class UserEntity {
 
     @Id
@@ -40,6 +43,9 @@ public class UserEntity {
 
     @Column(name = "external_id", unique = true)
     private UUID externalId;
+
+    @Column(name = "telegram_chat_id")
+    private Long telegramChatId;
 
     @Size(min = 1, max = 50)
     @Column(name = "first_name")
@@ -68,6 +74,9 @@ public class UserEntity {
     @Size(min = 3, message = "Password must be at least 3 characters")
     @Column(name = "password", nullable = false)
     private String password;
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<FavouriteStock> favouriteStocks = new HashSet<>();
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

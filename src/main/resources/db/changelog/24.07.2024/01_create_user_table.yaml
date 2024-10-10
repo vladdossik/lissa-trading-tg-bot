@@ -20,6 +20,11 @@ databaseChangeLog:
                     nullable: false
                     unique: true
               - column:
+                  name: telegram_chat_id
+                  type: BIGINT
+                  constraints:
+                    nullable: true
+              - column:
                   name: first_name
                   type: VARCHAR(50)
                   constraints:
