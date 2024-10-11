@@ -45,7 +45,6 @@ public class UserProcessingService {
     private final TelegramBotNotificationProperties notificationProperties;
     private final NotificationProducer notificationProducer;
 
-    // --- Асинхронная обработка пользователя ---
     @Async("taskExecutor")
     @Transactional
     public CompletableFuture<Void> processUserAsync(Long userId) {
@@ -58,7 +57,6 @@ public class UserProcessingService {
         return CompletableFuture.completedFuture(null);
     }
 
-    // --- Основная логика обработки пользователя ---
     private void processUser(Long userId) {
         log.debug("Processing user with ID {}", userId);
 
@@ -90,7 +88,6 @@ public class UserProcessingService {
         supportedStocks.forEach(stock -> processFavouriteStock(user, stock, figiToPriceMap));
     }
 
-    // --- Получение и подготовка данных пользователя ---
     private UserEntity fetchUserWithFavouriteStocks(Long userId) {
         return userRepository.findWithFavouriteStocksById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User with ID " + userId + " not found"));
@@ -102,14 +99,12 @@ public class UserProcessingService {
         log.debug("Successfully decrypted token for user");
     }
 
-    // --- Фильтрация избранных акций ---
     private List<FavouriteStock> filterSupportedFavouriteStocks(Set<FavouriteStock> favouriteStocks) {
         return favouriteStocks.stream()
                 .filter(stock -> SUPPORTED_INSTRUMENT_TYPES.contains(stock.getInstrumentType()))
                 .toList();
     }
 
-    // --- Работа с ценами акций ---
     private Map<String, Double> fetchCurrentPrices(List<FavouriteStock> stocks, UserEntity user) {
         List<String> figies = stocks.stream()
                 .map(FavouriteStock::getFigi)
@@ -133,7 +128,6 @@ public class UserProcessingService {
                 ));
     }
 
-    // --- Обработка избранных акций пользователя ---
     private void processFavouriteStock(UserEntity user, FavouriteStock stock, Map<String, Double> figiToPriceMap) {
         String figi = stock.getFigi();
         Double currentPrice = figiToPriceMap.get(figi);
@@ -154,7 +148,6 @@ public class UserProcessingService {
         }
     }
 
-    // --- Обновление существующих записей о ценах акций ---
     private void updateExistingStockPrice(UserEntity user, FavouriteStock stock, Double currentPrice, UserStockPrice existingPrice) {
         if (shouldUpdatePriceTimestamp(existingPrice.getPriceTimestamp())) {
             updatePriceTimestamp(existingPrice, currentPrice);
@@ -175,7 +168,6 @@ public class UserProcessingService {
         }
     }
 
-    // --- Логика обновления временных меток цен ---
     private boolean shouldUpdatePriceTimestamp(OffsetDateTime previousTimestamp) {
         return previousTimestamp.isBefore(OffsetDateTime.now().minusMinutes(notificationProperties.getPriceChangeWindowMinutes()));
     }
@@ -186,7 +178,6 @@ public class UserProcessingService {
         userStockPriceRepository.save(existingPrice);
     }
 
-    // --- Вычисление процента изменения цены ---
     private double calculatePriceChangePercentage(UserStockPrice existingPrice, Double currentPrice) {
         Double lastNotifiedPrice = existingPrice.getLastNotifiedPrice();
         Double previousPrice = existingPrice.getLastPrice();
@@ -200,7 +191,6 @@ public class UserProcessingService {
         }
     }
 
-    // --- Отправка уведомлений пользователю ---
     private void sendNotification(UserEntity user, FavouriteStock stock, Double currentPrice, double changePercentage) {
         NotificationMessage message = new NotificationMessage(
                 user.getTelegramChatId(),
@@ -210,12 +200,10 @@ public class UserProcessingService {
                 stock.getCurrency().name()
         );
 
-        // Используем NotificationProducer для отправки сообщения
         notificationProducer.sendNotification(message);
         log.debug("Sent notification to user {} about instrument {}", user.getTelegramNickname(), stock.getFigi());
     }
 
-    // --- Обновление данных после отправки уведомления ---
     private void updatePriceDataAfterNotification(UserStockPrice existingPrice, Double currentPrice) {
         existingPrice.setLastPrice(currentPrice);
         existingPrice.setPriceTimestamp(OffsetDateTime.now());
@@ -223,7 +211,6 @@ public class UserProcessingService {
         userStockPriceRepository.save(existingPrice);
     }
 
-    // --- Сохранение новых записей о ценах акций ---
     private void saveNewStockPrice(UserEntity user, FavouriteStock stock, Double currentPrice) {
         UserStockPrice newUserStockPrice = new UserStockPrice(
                 null,

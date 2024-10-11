@@ -20,9 +20,7 @@ public class RabbitListenerConfig {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(jackson2JsonMessageConverter);
-        // Настройка режима подтверждения сообщений
         factory.setAcknowledgeMode(AcknowledgeMode.AUTO);
-        // Настройка механизма повторных попыток
         factory.setRetryTemplate(retryTemplate());
         return factory;
     }
@@ -31,13 +29,11 @@ public class RabbitListenerConfig {
     public RetryTemplate retryTemplate() {
         RetryTemplate retryTemplate = new RetryTemplate();
 
-        // Настройка политики попыток
         SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
-        retryPolicy.setMaxAttempts(3); // Максимальное количество попыток
+        retryPolicy.setMaxAttempts(3);
 
-        // Настройка политики возврата
         FixedBackOffPolicy backOffPolicy = new FixedBackOffPolicy();
-        backOffPolicy.setBackOffPeriod(2000); // Задержка между попытками в миллисекундах
+        backOffPolicy.setBackOffPeriod(2000);
 
         retryTemplate.setRetryPolicy(retryPolicy);
         retryTemplate.setBackOffPolicy(backOffPolicy);

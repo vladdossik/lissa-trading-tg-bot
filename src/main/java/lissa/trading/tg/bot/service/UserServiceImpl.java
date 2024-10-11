@@ -42,7 +42,6 @@ public class UserServiceImpl implements UserService {
     private final TinkoffAccountClient tinkoffAccountClient;
     private final FavouriteStockRepository favouriteStockRepository;
 
-    // --- Регистрация пользователя ---
     @Override
     @Transactional
     @CacheEvict(value = "users", key = "#signupRequest.telegramNickname")
@@ -64,7 +63,6 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    // --- Получение информации о пользователе ---
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "users", key = "#telegramNickname")
@@ -114,14 +112,12 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional
     public void updateUserFromTinkoffData(UserEntity user) {
         log.info("Updating user with Tinkoff data: {}", user);
         userRepository.save(user);
         updateUserFavouriteStocks(user);
     }
 
-    // --- Управление избранными акциями пользователя ---
     private void updateUserFavouriteStocks(UserEntity user) {
         try {
             FavouriteStocksDto favouriteStocksDto = tinkoffAccountClient.getFavouriteStocks();
@@ -187,7 +183,6 @@ public class UserServiceImpl implements UserService {
         existingStock.setCurrency(updatedStock.getCurrency());
     }
 
-    // --- Вспомогательные методы ---
     private boolean isTelegramNicknameInUse(String telegramNickname) {
         return Boolean.TRUE.equals(userRepository.existsByTelegramNickname(telegramNickname));
     }

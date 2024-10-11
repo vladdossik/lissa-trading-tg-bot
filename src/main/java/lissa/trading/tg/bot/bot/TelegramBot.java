@@ -59,7 +59,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         this.favouriteStockCache = favouriteStockCache;
     }
 
-    // --- Основные настройки бота ---
     @Override
     public String getBotUsername() {
         return botName;
@@ -74,7 +73,6 @@ public class TelegramBot extends TelegramLongPollingBot {
                 });
     }
 
-    // --- Отправка уведомлений ---
     public void sendNotification(NotificationMessage message) {
         String stockLink = String.format("https://www.tbank.ru/invest/stocks/%s/", message.getStockName());
 
@@ -90,7 +88,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         sendMessage(message.getChatId(), formattedText, "HTML", true);
     }
 
-    // --- Обработка обновлений Telegram ---
     private void handleUpdate(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
             handleIncomingMessage(update);
@@ -109,7 +106,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    // --- Обработка команд пользователя ---
     private void handleCommand(Long chatId, BotCommand command, Update update) {
         switch (command) {
             case START -> processStartCommand(chatId, update);
@@ -154,7 +150,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    // --- Обработка состояния пользователя ---
     private void handleUserState(Long chatId, String messageText, Update update) {
         UserState state = userStates.getIfPresent(chatId);
         if (state != null) {
@@ -216,7 +211,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    // --- Управление сессиями пользователя ---
     private void promptForTinkoffToken(Long chatId) {
         String messageText = "Пожалуйста, предоставьте ваш <a href=\"https://www.tbank.ru/invest/settings/api/\">Tinkoff токен</a>.";
         sendMessage(chatId, messageText, "HTML", true);
@@ -248,7 +242,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    // --- Управление избранными акциями пользователя ---
     private List<FavouriteStock> getFavouritesFromCacheOrDB(Long chatId) {
         List<FavouriteStock> favourites = favouriteStockCache.getIfPresent(chatId);
 
@@ -281,7 +274,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         return "Ваши избранные акции:\n" + tickers;
     }
 
-    // --- Вспомогательные методы ---
     private UserEntity createUserEntityWithToken(String token, Update update) {
         UserEntity user = new UserEntity();
         user.setTinkoffToken(EncryptionService.encrypt(token));
