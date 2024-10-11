@@ -42,18 +42,17 @@ public class UserServiceImpl implements UserService {
     private final TinkoffAccountClient tinkoffAccountClient;
     private final FavouriteStockRepository favouriteStockRepository;
 
+    // --- Регистрация пользователя ---
     @Override
     @Transactional
     @CacheEvict(value = "users", key = "#signupRequest.telegramNickname")
     public UserRegistrationResponse registerUser(SignupRequest signupRequest) {
-
-        if (Boolean.TRUE.equals(userRepository.existsByTelegramNickname(signupRequest.getTelegramNickname()))) {
+        if (isTelegramNicknameInUse(signupRequest.getTelegramNickname())) {
             return new UserRegistrationResponse("Error: Nickname already in use!", false);
         }
 
-        UserEntity newUser = setUserInfo(signupRequest);
-        String decryptedToken = EncryptionService.decrypt(newUser.getTinkoffToken());
-        tinkoffAccountClient.setTinkoffToken(new TinkoffTokenDto(decryptedToken));
+        UserEntity newUser = createUserEntity(signupRequest);
+        setTinkoffTokenForClient(newUser.getTinkoffToken());
 
         try {
             updateUserFromTinkoffData(newUser);
@@ -65,6 +64,7 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    // --- Получение информации о пользователе ---
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "users", key = "#telegramNickname")
@@ -73,6 +73,19 @@ public class UserServiceImpl implements UserService {
                 .map(this::mapUserEntityToDto);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<UserEntity> getUserByChatId(Long chatId) {
+        return userRepository.findByTelegramChatId(chatId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserEntity> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    // --- Обновление данных пользователя ---
     @Override
     @Transactional
     @CacheEvict(value = "users", key = "#telegramNickname")
@@ -101,76 +114,21 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<UserEntity> getAllUsers() {
-        return userRepository.findAll();
-    }
-
-    @Override
+    @Transactional
     public void updateUserFromTinkoffData(UserEntity user) {
         log.info("Updating user with Tinkoff data: {}", user);
         userRepository.save(user);
         updateUserFavouriteStocks(user);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<UserEntity> getUserByChatId(Long chatId) {
-        return userRepository.findByTelegramChatId(chatId);
-    }
-
+    // --- Управление избранными акциями пользователя ---
     private void updateUserFavouriteStocks(UserEntity user) {
         try {
             FavouriteStocksDto favouriteStocksDto = tinkoffAccountClient.getFavouriteStocks();
-
             log.info("Favourite stocks from Tinkoff: {}", favouriteStocksDto);
+            Set<FavouriteStock> updatedFavouriteStocks = fetchFavouriteStocksFromDto(favouriteStocksDto, user);
 
-            Set<FavouriteStock> updatedFavouriteStocks = favouriteStocksDto.getFavouriteStocks().stream()
-                    .map(ticker -> {
-                        try {
-                            Stock stock = tinkoffAccountClient.getStockByTicker(ticker);
-                            return new FavouriteStock(
-                                    null,
-                                    user,
-                                    ticker,
-                                    stock.getFigi(),
-                                    stock.getTicker(),
-                                    stock.getName(),
-                                    stock.getType(),
-                                    stock.getCurrency()
-                            );
-                        } catch (Exception e) {
-                            log.warn("Failed to get stock for ticker {}: {}", ticker, e.getMessage());
-                            return null;
-                        }
-                    })
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toSet());
-
-            Set<FavouriteStock> existingFavouriteStocks = user.getFavouriteStocks();
-
-            existingFavouriteStocks.removeIf(fs -> updatedFavouriteStocks.stream()
-                    .noneMatch(ufs -> ufs.getFigi().equals(fs.getFigi())));
-
-            for (FavouriteStock updatedStock : updatedFavouriteStocks) {
-                boolean exists = existingFavouriteStocks.stream()
-                        .anyMatch(fs -> fs.getFigi().equals(updatedStock.getFigi()));
-                if (!exists) {
-                    existingFavouriteStocks.add(updatedStock);
-                } else {
-                    existingFavouriteStocks.stream()
-                            .filter(fs -> fs.getFigi().equals(updatedStock.getFigi()))
-                            .findFirst()
-                            .ifPresent(existingStock -> {
-                                existingStock.setTicker(updatedStock.getTicker());
-                                existingStock.setServiceTicker(updatedStock.getServiceTicker());
-                                existingStock.setName(updatedStock.getName());
-                                existingStock.setInstrumentType(updatedStock.getInstrumentType());
-                                existingStock.setCurrency(updatedStock.getCurrency());
-                            });
-                }
-            }
-
+            syncFavouriteStocks(user, updatedFavouriteStocks);
             userRepository.save(user);
             log.info("User updated with favourite stocks: {}", user);
         } catch (Exception e) {
@@ -178,7 +136,63 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    private UserEntity setUserInfo(SignupRequest signupRequest) {
+    private Set<FavouriteStock> fetchFavouriteStocksFromDto(FavouriteStocksDto favouriteStocksDto, UserEntity user) {
+        return favouriteStocksDto.getFavouriteStocks().stream()
+                .map(ticker -> fetchFavouriteStock(ticker, user))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+    }
+
+    private FavouriteStock fetchFavouriteStock(String ticker, UserEntity user) {
+        try {
+            Stock stock = tinkoffAccountClient.getStockByTicker(ticker);
+            return new FavouriteStock(
+                    null,
+                    user,
+                    ticker,
+                    stock.getFigi(),
+                    stock.getTicker(),
+                    stock.getName(),
+                    stock.getType(),
+                    stock.getCurrency()
+            );
+        } catch (Exception e) {
+            log.warn("Failed to get stock for ticker {}: {}", ticker, e.getMessage());
+            return null;
+        }
+    }
+
+    private void syncFavouriteStocks(UserEntity user, Set<FavouriteStock> updatedFavouriteStocks) {
+        Set<FavouriteStock> existingFavouriteStocks = user.getFavouriteStocks();
+
+        existingFavouriteStocks.removeIf(fs -> updatedFavouriteStocks.stream()
+                .noneMatch(ufs -> ufs.getFigi().equals(fs.getFigi())));
+
+        for (FavouriteStock updatedStock : updatedFavouriteStocks) {
+            existingFavouriteStocks.stream()
+                    .filter(fs -> fs.getFigi().equals(updatedStock.getFigi()))
+                    .findFirst()
+                    .ifPresentOrElse(
+                            existingStock -> updateExistingStock(existingStock, updatedStock),
+                            () -> existingFavouriteStocks.add(updatedStock)
+                    );
+        }
+    }
+
+    private void updateExistingStock(FavouriteStock existingStock, FavouriteStock updatedStock) {
+        existingStock.setTicker(updatedStock.getTicker());
+        existingStock.setServiceTicker(updatedStock.getServiceTicker());
+        existingStock.setName(updatedStock.getName());
+        existingStock.setInstrumentType(updatedStock.getInstrumentType());
+        existingStock.setCurrency(updatedStock.getCurrency());
+    }
+
+    // --- Вспомогательные методы ---
+    private boolean isTelegramNicknameInUse(String telegramNickname) {
+        return Boolean.TRUE.equals(userRepository.existsByTelegramNickname(telegramNickname));
+    }
+
+    private UserEntity createUserEntity(SignupRequest signupRequest) {
         UserEntity userEntity = new UserEntity();
         userEntity.setFirstName(signupRequest.getFirstName());
         userEntity.setLastName(signupRequest.getLastName());
@@ -187,6 +201,11 @@ public class UserServiceImpl implements UserService {
         userEntity.setRoles(resolveRoles(signupRequest.getRole()));
         userEntity.setPassword(encoder.encode(signupRequest.getPassword()));
         return userEntity;
+    }
+
+    private void setTinkoffTokenForClient(String encryptedToken) {
+        String decryptedToken = EncryptionService.decrypt(encryptedToken);
+        tinkoffAccountClient.setTinkoffToken(new TinkoffTokenDto(decryptedToken));
     }
 
     private UserInfoDto mapUserEntityToDto(UserEntity userEntity) {

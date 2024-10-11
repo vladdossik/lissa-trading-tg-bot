@@ -18,7 +18,7 @@ public class PriceMonitorService {
 
     @Scheduled(fixedRateString = "${telegram-bot.notification.checkPriceChangesInterval}")
     public void checkPriceChanges() {
-        log.debug("Начало процесса проверки цен");
+        log.info("Начало процесса проверки цен");
 
         List<UserEntity> users = userService.getAllUsers();
         log.debug("Получено {} пользователей", users.size());

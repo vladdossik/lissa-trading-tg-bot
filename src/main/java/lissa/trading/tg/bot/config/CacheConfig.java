@@ -37,6 +37,7 @@ public class CacheConfig {
         return Caffeine.newBuilder()
                 .expireAfterWrite(expireAfterWrite, TimeUnit.MINUTES)
                 .maximumSize(maximumSize)
+                .expireAfterAccess(15, TimeUnit.MINUTES)
                 .build();
     }
 
@@ -45,6 +46,7 @@ public class CacheConfig {
         return Caffeine.newBuilder()
                 .expireAfterWrite(expireAfterWrite, TimeUnit.MINUTES)
                 .maximumSize(maximumSize)
+                .expireAfterAccess(30, TimeUnit.MINUTES)
                 .build();
     }
 
@@ -53,6 +55,7 @@ public class CacheConfig {
         return Caffeine.newBuilder()
                 .expireAfterWrite(expireAfterWrite, TimeUnit.MINUTES)
                 .maximumSize(maximumSize)
+                .expireAfterAccess(60, TimeUnit.MINUTES)
                 .build();
     }
 

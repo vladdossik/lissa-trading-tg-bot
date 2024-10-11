@@ -1,6 +1,7 @@
 package lissa.trading.tg.bot.notification;
 
 import lissa.trading.tg.bot.bot.TelegramBot;
+import lissa.trading.tg.bot.config.RabbitMQConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -13,7 +14,7 @@ public class NotificationConsumer {
 
     private final TelegramBot telegramBot;
 
-    @RabbitListener(queues = "notificationQueue")
+    @RabbitListener(queues = RabbitMQConfig.NOTIFICATION_QUEUE)
     public void receiveNotification(NotificationMessage message) {
         log.debug("Получено уведомление: {}", message);
         try {
