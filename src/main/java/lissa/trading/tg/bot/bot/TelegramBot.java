@@ -68,7 +68,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     public void onUpdateReceived(Update update) {
         CompletableFuture.runAsync(() -> handleUpdate(update), executorService)
                 .exceptionally(ex -> {
-                    log.error("Ошибка обработки обновления: {}", ex.getMessage(), ex);
+                    log.error("Error processing update: {}", ex.getMessage(), ex);
                     return null;
                 });
     }

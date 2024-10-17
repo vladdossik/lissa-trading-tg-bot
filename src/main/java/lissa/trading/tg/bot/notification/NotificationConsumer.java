@@ -16,13 +16,12 @@ public class NotificationConsumer {
 
     @RabbitListener(queues = RabbitMQConfig.NOTIFICATION_QUEUE)
     public void receiveNotification(NotificationMessage message) {
-        log.debug("Получено уведомление: {}", message);
+        log.debug("Received notification for chat ID {}", message.getChatId());
         try {
             telegramBot.sendNotification(message);
-            log.info("Уведомление отправлено пользователю {} для акции {}",
-                    message.getChatId(), message.getStockName());
+            log.info("Notification sent to user {} for stock {}", message.getChatId(), message.getStockName());
         } catch (Exception e) {
-            log.error("Ошибка при отправке уведомления пользователю {}: {}", message.getChatId(), e.getMessage(), e);
+            log.error("Error sending notification to user {}: {}", message.getChatId(), e.getMessage(), e);
         }
     }
 }

@@ -56,9 +56,10 @@ public class UserServiceImpl implements UserService {
         try {
             updateUserFromTinkoffData(newUser);
             userRepository.save(newUser);
+            log.info("User {} registered successfully", newUser.getTelegramNickname());
             return new UserRegistrationResponse("User registered successfully!", true);
         } catch (Exception e) {
-            log.error("Failed to register user", e);
+            log.error("Failed to register user {}: {}", newUser.getTelegramNickname(), e.getMessage(), e);
             return new UserRegistrationResponse("Registration failed due to an error.", false);
         }
     }
@@ -113,7 +114,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void updateUserFromTinkoffData(UserEntity user) {
-        log.info("Updating user with Tinkoff data: {}", user);
+        log.info("Updating user {} with Tinkoff data", user.getTelegramNickname());
         userRepository.save(user);
         updateUserFavouriteStocks(user);
     }
@@ -121,12 +122,12 @@ public class UserServiceImpl implements UserService {
     private void updateUserFavouriteStocks(UserEntity user) {
         try {
             FavouriteStocksDto favouriteStocksDto = tinkoffAccountClient.getFavouriteStocks();
-            log.info("Favourite stocks from Tinkoff: {}", favouriteStocksDto);
+            log.info("Received {} favourite stocks from Tinkoff for user {}", favouriteStocksDto.getFavouriteStocks().size(), user.getTelegramNickname());
             Set<FavouriteStock> updatedFavouriteStocks = fetchFavouriteStocksFromDto(favouriteStocksDto, user);
 
             syncFavouriteStocks(user, updatedFavouriteStocks);
             userRepository.save(user);
-            log.info("User updated with favourite stocks: {}", user);
+            log.info("User {} updated with {} favourite stocks", user.getTelegramNickname(), updatedFavouriteStocks.size());
         } catch (Exception e) {
             log.error("Failed to update user {} from Tinkoff data: {}", user.getTelegramNickname(), e.getMessage(), e);
         }
