@@ -18,10 +18,10 @@ public class PriceMonitorService {
 
     @Scheduled(fixedRateString = "${telegram-bot.notification.checkPriceChangesInterval}")
     public void checkPriceChanges() {
-        log.info("Начало процесса проверки цен");
+        log.info("Starting price check process");
 
         List<UserEntity> users = userService.getAllUsers();
-        log.debug("Получено {} пользователей", users.size());
+        log.debug("Retrieved {} users", users.size());
 
         users.stream()
                 .filter(user -> user.getTelegramChatId() != null)
@@ -31,6 +31,6 @@ public class PriceMonitorService {
                             return null;
                         }));
 
-        log.debug("Процесс проверки цен завершен");
+        log.debug("Price check process completed");
     }
 }

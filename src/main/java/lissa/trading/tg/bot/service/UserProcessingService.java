@@ -64,6 +64,7 @@ public class UserProcessingService {
         setTinkoffTokenForClient(user.getTinkoffToken());
 
         userService.updateUserFromTinkoffData(user);
+        log.debug("User data updated from Tinkoff for user {}", user.getTelegramNickname());
 
         Set<FavouriteStock> favouriteStocks = user.getFavouriteStocks();
         log.debug("User {} has {} favourite stocks", user.getTelegramNickname(), favouriteStocks.size());
@@ -74,12 +75,16 @@ public class UserProcessingService {
         }
 
         List<FavouriteStock> supportedStocks = filterSupportedFavouriteStocks(favouriteStocks);
+        log.debug("User {} has {} supported favourite stocks", user.getTelegramNickname(), supportedStocks.size());
+
         if (supportedStocks.isEmpty()) {
             log.debug("User {} has no supported favourite stocks, skipping", user.getTelegramNickname());
             return;
         }
 
         Map<String, Double> figiToPriceMap = fetchCurrentPrices(supportedStocks, user);
+        log.debug("Fetched prices for {} figies for user {}", figiToPriceMap.size(), user.getTelegramNickname());
+
         if (figiToPriceMap.isEmpty()) {
             log.debug("No valid prices for user {}", user.getTelegramNickname());
             return;
@@ -116,7 +121,7 @@ public class UserProcessingService {
             return Collections.emptyMap();
         }
 
-        log.debug("Fetching prices for figies: {}", figies);
+        log.debug("Fetching prices for {} figies", figies.size());
         StocksPricesDto pricesDto = tinkoffAccountClient.getPricesStocksByFigies(new FigiesDto(figies));
 
         return pricesDto.getPrices().stream()
@@ -145,6 +150,7 @@ public class UserProcessingService {
             updateExistingStockPrice(user, stock, currentPrice, optionalPrice.get());
         } else {
             saveNewStockPrice(user, stock, currentPrice);
+            log.debug("Saved new price record for {} (figi: {})", stock.getServiceTicker(), stock.getFigi());
         }
     }
 
