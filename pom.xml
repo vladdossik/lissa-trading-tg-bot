@@ -20,6 +20,13 @@
         <spring-cloud.version>2023.0.3</spring-cloud.version>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <!-- Telegram Bots Spring Boot Starter -->
         <dependency>
@@ -108,9 +115,9 @@
 
         <!-- Authentication and Security Library -->
         <dependency>
-            <groupId>lissa.trading</groupId>
-            <artifactId>auth-security-lib</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <groupId>com.github.vladdossik</groupId>
+            <artifactId>lissa-trading-auth-lib</artifactId>
+            <version>v0.0.3</version>
         </dependency>
 
         <!-- Jackson for JSON Processing -->
