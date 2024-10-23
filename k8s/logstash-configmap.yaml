@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-config
+data:
+  logstash.conf: |
+    input {
+        tcp {
+            port => 5000
+            codec => json_lines
+        }
+    }
+
+    output {
+        elasticsearch {
+            hosts => ["http://elasticsearch:9200"]
+            index => "application-logs-%{+YYYY.MM.dd}"
+        }
+        stdout {
+            codec => rubydebug
+        }
+    }
