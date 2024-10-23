@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lissa-trading-tg-bot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lissa-trading-tg-bot
+  template:
+    metadata:
+      labels:
+        app: lissa-trading-tg-bot
+    spec:
+      containers:
+        - name: tg-bot
+          image: belaquaaa/lissa-trading-tg-bot:latest # Замените на ваше имя образа
+          ports:
+            - containerPort: 8083
+          envFrom:
+            - configMapRef:
+                name: lissa-trading-tg-bot-config
+            - secretRef:
+                name: lissa-trading-tg-bot-secret

@@ -1,0 +1,60 @@
+server:
+  port: ${SERVER_PORT}
+
+bot:
+  token: ${BOT_TOKEN}
+  name: ${BOT_NAME}
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST}
+    port: ${SPRING_RABBITMQ_PORT}
+    username: ${SPRING_RABBITMQ_USERNAME}
+    password: ${SPRING_RABBITMQ_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        default_schema: ${SPRING_DATA_DEFAULT_SCHEMA}
+
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    default-schema: ${SPRING_DATA_DEFAULT_SCHEMA}
+
+security:
+  internal:
+    token: ${SECURITY_INTERNAL_TOKEN}
+
+cache:
+  caffeine:
+    expire-after-write: ${CACHE_CAFFEINE_EXPIRE_AFTER_WRITE} # в минутах
+    maximum-size: ${CACHE_CAFFEINE_MAXIMUM_SIZE}
+
+integration:
+  rest:
+    auth-service-url: ${AUTH_SERVICE_URL}
+    user-service-url: ${USER_SERVICE_URL}
+    tinkoff-api-service-url: ${TINKOFF_API_SERVICE_URL}
+
+telegram-bot:
+  notification:
+    checkPriceChangesInterval: ${TELEGRAM_BOT_NOTIFICATION_CHECK_PRICE_CHANGES_INTERVAL} # интервал проверки цен, миллисекунды
+    priceChangeWindowMinutes: ${TELEGRAM_BOT_NOTIFICATION_PRICE_CHANGE_WINDOW_MINUTES} # сравнение цены за час
+    criticalPriceChangePercentage: ${TELEGRAM_BOT_NOTIFICATION_CRITICAL_PRICE_CHANGE_PERCENTAGE} # отклонение на 3% критичное
+
+logging:
+  level:
+    root: info
+  logstash:
+    host: ${LOGSTASH_HOST}  # Хост Logstash
+    port: ${LOGSTASH_PORT}  # Порт Logstash
