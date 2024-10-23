@@ -22,12 +22,10 @@ public class NotificationProducer {
                 return m;
             });
 
-            log.debug("Отправлено уведомление: {}", message);
-            log.info("Уведомление успешно отправлено пользователю {} для акции {}",
-                    message.getChatId(), message.getStockName());
+            log.debug("Notification queued for chat ID {}", message.getChatId());
+            log.info("Notification successfully sent to user {} for stock {}", message.getChatId(), message.getStockName());
         } catch (Exception e) {
-            log.error("Ошибка при отправке уведомления пользователю {}: {}",
-                    message.getChatId(), e.getMessage(), e);
+            log.error("Error sending notification to user {}: {}", message.getChatId(), e.getMessage(), e);
         }
     }
 }
