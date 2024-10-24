@@ -50,3 +50,10 @@ telegram-bot:
     checkPriceChangesInterval: 60000 # интервал проверки цен, миллисекунды
     priceChangeWindowMinutes: 60 # сравнение цены за час
     criticalPriceChangePercentage: 3 # отклонение на 3% критичное
+
+logging:
+  level:
+    root: info
+  logstash:
+    host: localhost  # Хост Logstash
+    port: 5000 # Порт Logstash

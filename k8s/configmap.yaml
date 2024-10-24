@@ -19,7 +19,7 @@ data:
   CACHE_CAFFEINE_EXPIRE_AFTER_WRITE: "5" # в минутах
   CACHE_CAFFEINE_MAXIMUM_SIZE: "100"
   SPRING_PROFILES_ACTIVE: "prod" # Установка активного профиля
-  TELEGRAM_BOT_NOTIFICATION_CHECK_PRICE_CHANGES_INTERVAL: "290000" # интервал проверки цен, миллисекунды
+  TELEGRAM_BOT_NOTIFICATION_CHECK_PRICE_CHANGES_INTERVAL: "60000" # интервал проверки цен, миллисекунды
   TELEGRAM_BOT_NOTIFICATION_PRICE_CHANGE_WINDOW_MINUTES: "60" # сравнение цены за 10 минут
   TELEGRAM_BOT_NOTIFICATION_CRITICAL_PRICE_CHANGE_PERCENTAGE: "3" # отклонение на 3% критичное
   LOGSTASH_HOST: "logstash"  # Обновлённый хост для Logstash
