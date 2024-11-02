@@ -6,6 +6,7 @@ import lissa.trading.tg.bot.bot.UserState;
 import lissa.trading.tg.bot.model.FavouriteStock;
 import lissa.trading.tg.bot.model.UserEntity;
 import lissa.trading.tg.bot.repository.FavouriteStockRepository;
+import lissa.trading.tg.bot.service.UserProcessingService;
 import lissa.trading.tg.bot.service.UserService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,11 +24,11 @@ public class BotConfig {
     @Bean
     public TelegramBot telegramBot(@Value("${bot.name}") String botName,
                                    @Value("${bot.token}") String botToken,
-                                   UserService userService, FavouriteStockRepository favouriteStockRepository,
+                                   UserService userService, UserProcessingService userProcessingService, FavouriteStockRepository favouriteStockRepository,
                                    @Qualifier("userStateCache") Cache<Long, UserState> userStates,
                                    @Qualifier("userEntityCache") Cache<Long, UserEntity> userEntities,
                                    @Qualifier("favouriteStockCache") Cache<Long, List<FavouriteStock>> favouriteStockCache) {
-        return new TelegramBot(botName, botToken, userService, favouriteStockRepository, userStates, userEntities, favouriteStockCache);
+        return new TelegramBot(botName, botToken, userService, userProcessingService, favouriteStockRepository, userStates, userEntities, favouriteStockCache);
     }
 
     @Bean
