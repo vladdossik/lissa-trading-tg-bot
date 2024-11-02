@@ -1,5 +1,6 @@
 package lissa.trading.tg.bot.service;
 
+import lissa.trading.tg.bot.config.TelegramBotNotificationProperties;
 import lissa.trading.tg.bot.model.UserEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,8 +16,9 @@ public class PriceMonitorService {
 
     private final UserService userService;
     private final UserProcessingService userProcessingService;
+    private final TelegramBotNotificationProperties notificationProperties;
 
-    @Scheduled(fixedRateString = "${telegram-bot.notification.checkPriceChangesInterval}")
+    @Scheduled(fixedRateString = "#{@telegramBotNotificationProperties.checkPriceChangesInterval}")
     public void checkPriceChanges() {
         log.info("Starting price check process");
 

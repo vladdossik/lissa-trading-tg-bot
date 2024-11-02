@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration scan="true" scanPeriod="30 seconds">
 
-    <!-- Свойства (можно настроить пути и имена файлов) -->
+    <!-- Свойства (используем переменные окружения) -->
     <property name="LOG_PATH" value="logs"/>
     <property name="LOG_FILE_NAME" value="application.log"/>
-    <property name="LOGSTASH_HOST" value="localhost"/>
-    <property name="LOGSTASH_PORT" value="5000"/>
+    <property name="LOGSTASH_HOST" value="${LOGSTASH_HOST}"/>
+    <property name="LOGSTASH_PORT" value="${LOGSTASH_PORT}"/>
 
     <!-- Консольный аппендер -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
@@ -36,7 +36,7 @@
 
     <!-- Logstash аппендер -->
     <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
-        <!-- Адрес и порт Logstash на локальном хосте -->
+        <!-- Используем переменные окружения для адреса и порта Logstash -->
         <destination>${LOGSTASH_HOST}:${LOGSTASH_PORT}</destination>
         <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
             <providers>
