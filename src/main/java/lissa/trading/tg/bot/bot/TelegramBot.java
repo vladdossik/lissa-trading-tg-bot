@@ -136,7 +136,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private void processTokenCommand(Long chatId) {
-        sendMessage(chatId, "Пожалуйста, предоставьте ваш новый Tinkoff токен. Вы можете отменить операцию в любое время, введя команду /cancel.");
+        sendMessage(chatId, "Пожалуйста, предоставьте ваш новый Tinkoff токен. Обновлять токен можно раз в 5 минут. Вы можете отменить операцию в любое время, введя команду /cancel.");
         userStates.put(chatId, UserState.WAITING_FOR_NEW_TOKEN);
     }
 
@@ -230,21 +230,32 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private void processNewTokenInput(Long chatId, String newToken, Update update) {
-        if (isValidToken(newToken)) {
-            String telegramNickname = getSafeValue(update.getMessage().getFrom().getUserName());
-
-            userService.getUserByTelegramNickname(telegramNickname).ifPresentOrElse(
-                    user -> {
-                        userService.updateUserToken(user.getTelegramNickname(), EncryptionService.encrypt(newToken));
-                        sendMessage(chatId, "Ваш Tinkoff токен обновлен.");
-                        clearUserSession(chatId);
-                    },
-                    () -> sendMessage(chatId, "Пользователь не найден. Пожалуйста, зарегистрируйтесь сначала.")
-            );
-        } else {
+        if (!isValidToken(newToken)) {
             sendMessage(chatId, "Некорректный Tinkoff токен. Пожалуйста, предоставьте корректный токен.");
+            return;
         }
+
+        String telegramNickname = getSafeValue(update.getMessage().getFrom().getUserName());
+
+        userService.getUserByTelegramNickname(telegramNickname).ifPresentOrElse(
+                user -> {
+                    sendMessage(chatId, "Обновление токена, пожалуйста, подождите...");
+                    CompletableFuture.runAsync(() -> {
+                        try {
+                            String encryptedToken = EncryptionService.encrypt(newToken);
+                            userService.updateUserToken(user.getTelegramNickname(), encryptedToken);
+                            sendMessage(chatId, "Ваш Tinkoff токен обновлен.");
+                            clearUserSession(chatId);
+                        } catch (Exception e) {
+                            log.error("Ошибка при обновлении токена для пользователя {}: {}", user.getTelegramNickname(), e.getMessage());
+                            sendMessage(chatId, "Произошла ошибка при обновлении токена.");
+                        }
+                    }, executorService);
+                },
+                () -> sendMessage(chatId, "Пользователь не найден. Пожалуйста, зарегистрируйтесь сначала.")
+        );
     }
+
 
     private void promptForTinkoffToken(Long chatId) {
         String messageText = "Пожалуйста, предоставьте ваш <a href=\"https://www.tbank.ru/invest/settings/api/\">Tinkoff токен</a>.";
