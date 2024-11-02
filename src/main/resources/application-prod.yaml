@@ -55,6 +55,7 @@ telegram-bot:
 logging:
   level:
     root: info
-  logstash:
-    host: ${LOGSTASH_HOST}  # Хост Logstash
-    port: ${LOGSTASH_PORT}  # Порт Logstash
+
+logstash:
+  host: ${LOGSTASH_HOST}  # Хост Logstash
+  port: ${LOGSTASH_PORT}  # Порт Logstash
