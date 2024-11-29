@@ -1,6 +1,7 @@
 package lissa.trading.tg.bot.config;
 
 import com.github.benmanes.caffeine.cache.Cache;
+import lissa.trading.tg.bot.analytics.AnalyticsProducer;
 import lissa.trading.tg.bot.bot.TelegramBot;
 import lissa.trading.tg.bot.bot.UserState;
 import lissa.trading.tg.bot.model.FavouriteStock;
@@ -24,10 +25,13 @@ public class BotConfig {
     public TelegramBot telegramBot(@Value("${bot.name}") String botName,
                                    @Value("${bot.token}") String botToken,
                                    UserService userService, FavouriteStockRepository favouriteStockRepository,
+                                   AnalyticsProducer analyticsProducer,
+                                   @Qualifier("stocksForInfoCache") Cache<Long, List<String>> stocksForInfoCache,
                                    @Qualifier("userStateCache") Cache<Long, UserState> userStates,
                                    @Qualifier("userEntityCache") Cache<Long, UserEntity> userEntities,
                                    @Qualifier("favouriteStockCache") Cache<Long, List<FavouriteStock>> favouriteStockCache) {
-        return new TelegramBot(botName, botToken, userService, favouriteStockRepository, userStates, userEntities, favouriteStockCache);
+        return new TelegramBot(botName, botToken, userService, favouriteStockRepository, analyticsProducer,
+                stocksForInfoCache, userStates, userEntities, favouriteStockCache);
     }
 
     @Bean

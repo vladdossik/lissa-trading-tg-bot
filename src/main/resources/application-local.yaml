@@ -44,6 +44,12 @@ integration:
     auth-service-url: http://localhost:8081
     user-service-url: http://localhost:8080
     tinkoff-api-service-url: http://localhost:8082
+  rabbit:
+    analytics-service:
+      request-queue: requestQueue
+      pulse-response-queue: pulseResponseQueue
+      news-response-queue: newsResponseQueue
+
 
 telegram-bot:
   notification:

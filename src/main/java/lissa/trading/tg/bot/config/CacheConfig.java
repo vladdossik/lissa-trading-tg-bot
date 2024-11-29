@@ -59,6 +59,15 @@ public class CacheConfig {
                 .build();
     }
 
+    @Bean(name = "stocksForInfoCache")
+    public Cache<Long, List<String>> stocksForInfoCache() {
+        return Caffeine.newBuilder()
+                .expireAfterWrite(expireAfterWrite, TimeUnit.MINUTES)
+                .maximumSize(maximumSize)
+                .expireAfterAccess(60, TimeUnit.MINUTES)
+                .build();
+    }
+
     @Bean
     public Caffeine<Object, Object> caffeineConfig() {
         return Caffeine.newBuilder()
