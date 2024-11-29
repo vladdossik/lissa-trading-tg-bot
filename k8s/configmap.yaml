@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lissa-trading-tg-bot-config
+  namespace: default
+data:
+  SERVER_PORT: "8083"
+  BOT_NAME: "lissa_trading_bot"
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://lissa-trading-db:5432/lissa-trading-db"
+  SPRING_DATASOURCE_USERNAME: "postgres"
+  SPRING_DATA_DEFAULT_SCHEMA: "tg_bot_db"
+  SPRING_RABBITMQ_HOST: "rabbitmq" # Подключение к rabbitmq сервису в кубере
+  SPRING_RABBITMQ_PORT: "5672"
+  SPRING_RABBITMQ_USERNAME: "lissa_user" # Используемого нового пользователя
+  SPRING_RABBITMQ_PASSWORD: "secure_password" # Пароль нового пользователя
+  AUTH_SERVICE_URL: "http://lissa-trading-auth-service:8081"
+  USER_SERVICE_URL: "http://lissa-trading-user-service:8080"
+  TINKOFF_API_SERVICE_URL: "http://lissa-trading-tinkoff-api-service:8082"
+  CACHE_CAFFEINE_EXPIRE_AFTER_WRITE: "5" # в минутах
+  CACHE_CAFFEINE_MAXIMUM_SIZE: "100"
+  SPRING_PROFILES_ACTIVE: "prod" # Установка активного профиля
+  TELEGRAM_BOT_NOTIFICATION_CHECK_PRICE_CHANGES_INTERVAL: "60000" # интервал проверки цен, миллисекунды
+  TELEGRAM_BOT_NOTIFICATION_PRICE_CHANGE_WINDOW_MINUTES: "60" # сравнение цены за 10 минут
+  TELEGRAM_BOT_NOTIFICATION_CRITICAL_PRICE_CHANGE_PERCENTAGE: "3" # отклонение на 3% критичное
+  LOGSTASH_HOST: "logstash"  # Обновлённый хост для Logstash
+  LOGSTASH_PORT: "5000"      # Порт Logstash

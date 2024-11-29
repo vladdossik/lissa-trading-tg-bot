@@ -11,6 +11,9 @@ public enum BotCommand {
     FAVOURITES("/favourites"),
     PULSE("/pulse"),
     NEWS("/news"),
+    CANCEL("/cancel"),
+    REFRESH("/refresh"),
+    HELP("/help"),
     UNKNOWN("");
 
     private static final Map<String, BotCommand> COMMAND_MAP = Arrays.stream(values())

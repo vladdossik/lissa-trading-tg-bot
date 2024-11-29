@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="30 seconds">
+
+    <!-- Свойства (используем переменные окружения) -->
+    <property name="LOG_PATH" value="logs"/>
+    <property name="LOG_FILE_NAME" value="application.log"/>
+    <springProperty name="LOGSTASH_HOST" source="logstash.host"/>
+    <springProperty name="LOGSTASH_PORT" source="logstash.port"/>
+
+    <!-- Консольный аппендер -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- Фильтр для логов уровня INFO и выше -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- Файловый аппендер -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/${LOG_FILE_NAME}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- Ежедневное создание нового файла лога -->
+            <fileNamePattern>${LOG_PATH}/${LOG_FILE_NAME}.%d{yyyy-MM-dd}</fileNamePattern>
+            <!-- Хранение логов за последние 30 дней -->
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- Logstash аппендер -->
+    <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <!-- Используем переменные окружения для адреса и порта Logstash -->
+        <destination>${LOGSTASH_HOST}:${LOGSTASH_PORT}</destination>
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <!-- Временная метка в UTC -->
+                <timestamp>
+                    <timeZone>UTC</timeZone>
+                </timestamp>
+                <!-- Версия события -->
+                <version />
+                <!-- Уровень логирования -->
+                <logLevel />
+                <!-- Имя логгера -->
+                <loggerName />
+                <!-- Имя потока -->
+                <threadName />
+                <!-- Сообщение лога -->
+                <message />
+                <!-- Контекст приложения -->
+                <context />
+                <!-- Дополнительные данные (если используются) -->
+                <mdc />
+                <!-- Стек ошибки, если есть -->
+                <stackTrace />
+            </providers>
+        </encoder>
+    </appender>
+
+    <!-- Конфигурация root логгера -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+        <appender-ref ref="LOGSTASH" />
+    </root>
+
+</configuration>

@@ -1,5 +1,6 @@
 package lissa.trading.tg.bot.service;
 
+import lissa.trading.tg.bot.config.TelegramBotNotificationProperties;
 import lissa.trading.tg.bot.model.UserEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,13 +16,14 @@ public class PriceMonitorService {
 
     private final UserService userService;
     private final UserProcessingService userProcessingService;
+    private final TelegramBotNotificationProperties notificationProperties;
 
-    @Scheduled(fixedRateString = "${telegram-bot.notification.checkPriceChangesInterval}")
+    @Scheduled(fixedRateString = "#{@telegramBotNotificationProperties.checkPriceChangesInterval}")
     public void checkPriceChanges() {
-        log.info("Начало процесса проверки цен");
+        log.info("Starting price check process");
 
         List<UserEntity> users = userService.getAllUsers();
-        log.debug("Получено {} пользователей", users.size());
+        log.debug("Retrieved {} users", users.size());
 
         users.stream()
                 .filter(user -> user.getTelegramChatId() != null)
@@ -31,6 +33,6 @@ public class PriceMonitorService {
                             return null;
                         }));
 
-        log.debug("Процесс проверки цен завершен");
+        log.debug("Price check process completed");
     }
 }
