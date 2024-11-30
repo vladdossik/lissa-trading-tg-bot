@@ -13,4 +13,3 @@ import lombok.NoArgsConstructor;
 public class BrandInfoPulseResponseDto extends PulseResponseDto {
     private BrandInfoDto brandInfo;
 }
-

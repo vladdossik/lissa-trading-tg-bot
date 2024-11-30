@@ -4,22 +4,10 @@ import com.github.benmanes.caffeine.cache.Cache;
 import lissa.trading.lissa.auth.lib.dto.UserInfoDto;
 import lissa.trading.lissa.auth.lib.security.EncryptionService;
 import lissa.trading.tg.bot.analytics.AnalyticsInfoType;
-import lissa.trading.tg.bot.analytics.AnalyticsProducer;
+import lissa.trading.tg.bot.analytics.ProcessingAnalyticsResponseService;
 import lissa.trading.tg.bot.analytics.dto.AnalyticsNewsResponseDto;
 import lissa.trading.tg.bot.analytics.dto.AnalyticsPulseResponseDto;
 import lissa.trading.tg.bot.analytics.dto.AnalyticsRequestDto;
-import lissa.trading.tg.bot.dto.news.NewsDto;
-import lissa.trading.tg.bot.dto.news.NewsSourceResponseDto;
-import lissa.trading.tg.bot.dto.tinkoffPulse.PulseResponseDto;
-import lissa.trading.tg.bot.dto.tinkoffPulse.brandInfo.BrandInfoDto;
-import lissa.trading.tg.bot.dto.tinkoffPulse.brandInfo.BrandInfoPulseResponseDto;
-import lissa.trading.tg.bot.dto.tinkoffPulse.ideas.BrokerIdeaDto;
-import lissa.trading.tg.bot.dto.tinkoffPulse.ideas.StockIdeaDto;
-import lissa.trading.tg.bot.dto.tinkoffPulse.ideas.StockIdeasPulseResponseDto;
-import lissa.trading.tg.bot.dto.tinkoffPulse.ideas.TickerIdeaDto;
-import lissa.trading.tg.bot.dto.tinkoffPulse.news.NewsTickerDto;
-import lissa.trading.tg.bot.dto.tinkoffPulse.news.StockNewsDto;
-import lissa.trading.tg.bot.dto.tinkoffPulse.news.StockNewsPulseResponseDto;
 import lissa.trading.tg.bot.model.FavouriteStock;
 import lissa.trading.tg.bot.model.UserEntity;
 import lissa.trading.tg.bot.notification.NotificationMessage;
@@ -28,6 +16,7 @@ import lissa.trading.tg.bot.payload.response.UserRegistrationResponse;
 import lissa.trading.tg.bot.repository.FavouriteStockRepository;
 import lissa.trading.tg.bot.service.UserProcessingService;
 import lissa.trading.tg.bot.service.UserService;
+import lissa.trading.tg.bot.utils.MessageConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,8 +26,6 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -57,7 +44,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     private final UserService userService;
     private final UserProcessingService userProcessingService;
     private final FavouriteStockRepository favouriteStockRepository;
-    private final AnalyticsProducer analyticsProducer;
+    private final ProcessingAnalyticsResponseService processingAnalyticsResponseService;
 
     private final Cache<Long, UserState> userStates;
     private final Cache<Long, UserEntity> userEntities;
@@ -69,9 +56,10 @@ public class TelegramBot extends TelegramLongPollingBot {
     public TelegramBot(
             @Value("${bot.name}") String botName,
             @Value("${bot.token}") String botToken,
-            AnalyticsProducer analyticsProducer,
+            UserService userService, UserProcessingService userProcessingService,
+            FavouriteStockRepository favouriteStockRepository,
+            ProcessingAnalyticsResponseService processingAnalyticsResponseService,
             @Qualifier("stocksForInfoCache") Cache<Long, List<String>> stocksForInfoCache,
-            UserService userService, UserProcessingService userProcessingService, FavouriteStockRepository favouriteStockRepository,
             @Qualifier("userStateCache") Cache<Long, UserState> userStateCache,
             @Qualifier("userEntityCache") Cache<Long, UserEntity> userEntityCache,
             @Qualifier("favouriteStockCache") Cache<Long, List<FavouriteStock>> favouriteStockCache
@@ -81,7 +69,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         this.userService = userService;
         this.userProcessingService = userProcessingService;
         this.favouriteStockRepository = favouriteStockRepository;
-        this.analyticsProducer = analyticsProducer;
+        this.processingAnalyticsResponseService = processingAnalyticsResponseService;
         this.stocksForInfoCache = stocksForInfoCache;
         this.userStates = userStateCache;
         this.userEntities = userEntityCache;
@@ -115,6 +103,24 @@ public class TelegramBot extends TelegramLongPollingBot {
         );
 
         sendMessage(message.getChatId(), formattedText, "HTML", true);
+    }
+
+    public void handlePulseResponse(AnalyticsPulseResponseDto responseDto) {
+        List<String> messages = processingAnalyticsResponseService.processPulseResponse(responseDto);
+        Long chatId = responseDto.getChatId();
+        for (String message : messages) {
+            sendMessage(chatId, message, "HTML", true);
+        }
+        userStates.put(responseDto.getChatId(), UserState.WAITING_FOR_NEXT_COMMAND);
+        sendMessage(responseDto.getChatId(), MessageConstants.CHOOSE_TYPE_MESSAGE);
+    }
+
+    public void handleNewsResponse(AnalyticsNewsResponseDto newsResponseDto) {
+        List<String> news = processingAnalyticsResponseService.processNewsResponse(newsResponseDto);
+        Long chatId = newsResponseDto.getChatId();
+        for (String elem : news) {
+            sendMessage(chatId, elem, "HTML", true);
+        }
     }
 
     private void handleUpdate(Update update) {
@@ -189,18 +195,16 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private void processTinkoffPulseCommand(Long chatId) {
-        sendMessage(chatId, "Напишите тикеры компаний о которых желаете получить информацию\n" +
-                "В формате: YDEX,SBER,VTBR");
+        sendMessage(chatId, MessageConstants.PRINT_TICKERS_MESSAGE);
         stocksForInfoCache.invalidate(chatId);
         userStates.put(chatId, UserState.WAITING_FOR_PULSE_TICKERS);
     }
 
     private void processNewsCommand(Long chatId) {
-        sendMessage(chatId, "Напишите тикеры компаний о которых желаете получить информацию\n" +
-                "В формате: YDEX,SBER,VTBR");
+        sendMessage(chatId, MessageConstants.PRINT_TICKERS_MESSAGE);
         userStates.put(chatId, UserState.WAITING_FOR_NEWS_TICKERS);
     }
-  
+
     private void processCancelCommand(Long chatId) {
         userStates.invalidate(chatId);
         userEntities.invalidate(chatId);
@@ -244,21 +248,20 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private void processPulseTickers(Long chatId, String messageText) {
-        List<String> tickers = Arrays.asList(messageText.split(","));
-        stocksForInfoCache.put(chatId, tickers);
-        sendMessage(chatId, """
-                Выберите желаемое:
-                news - Новости
-                ideas - Идеи для инвестиций
-                brandInfo - Информацию о компаниях
-                """);
-        userStates.put(chatId, UserState.WAITING_FOR_CHOOSE_TYPE);
+        if (messageText.matches("^[A-Za-z0-9]+(,[A-Za-z0-9]+)*$")) {
+            List<String> tickers = Arrays.asList(messageText.split(","));
+            stocksForInfoCache.put(chatId, tickers);
+            sendMessage(chatId, MessageConstants.CHOOSE_TYPE_MESSAGE);
+            userStates.put(chatId, UserState.WAITING_FOR_CHOOSE_TYPE);
+        } else {
+            sendMessage(chatId, "Некорректный формат. Убедитесь, что тикеры указаны через запятую без пробелов или других символов.");
+        }
     }
 
     private void processNewsTickers(Long chatId, String messageText) {
         List<String> tickers = Arrays.asList(messageText.split(","));
         AnalyticsRequestDto requestDto = new AnalyticsRequestDto(AnalyticsInfoType.NEWS, chatId, tickers);
-        analyticsProducer.sendRequest(requestDto);
+        processingAnalyticsResponseService.createRequest(requestDto);
         sendMessage(chatId, "Запрос отправлен, ожидайте...");
         userStates.put(chatId, UserState.WAITING_FOR_NEWS_RESPONSE);
     }
@@ -288,155 +291,10 @@ public class TelegramBot extends TelegramLongPollingBot {
                 requestDto.setType(AnalyticsInfoType.BRAND_INFO);
                 break;
         }
-        analyticsProducer.sendRequest(requestDto);
+
+        processingAnalyticsResponseService.createRequest(requestDto);
         sendMessage(chatId, "Запрос отправлен, ожидайте...");
         userStates.put(chatId, UserState.WAITING_FOR_PULSE_RESPONSE);
-    }
-
-    public void processNewsResponse(AnalyticsNewsResponseDto newsResponseDto) {
-        formatNewsResponse(newsResponseDto);
-    }
-
-    public void processPulseResponse(AnalyticsPulseResponseDto responseDto) {
-        Long chatId = responseDto.getChatId();
-        List<PulseResponseDto> data = responseDto.getData();
-
-        for (PulseResponseDto response : data) {
-            if (response instanceof StockNewsPulseResponseDto news) {
-                formatPulseNewsResponse(news, chatId);
-            } else if (response instanceof StockIdeasPulseResponseDto ideas) {
-                formatIdeasResponse(ideas, chatId);
-            } else if (response instanceof BrandInfoPulseResponseDto brandIfo) {
-                formatBrandInfoResponse(brandIfo, chatId);
-            }
-        }
-        userStates.put(responseDto.getChatId(), UserState.WAITING_FOR_NEXT_COMMAND);
-        sendMessage(responseDto.getChatId(), """
-                Выберите желаемое:
-                news - Новости
-                ideas - Идеи для инвестиций
-                brandInfo - Информацию о компаниях
-                /pulse - обновить тикеры
-                """);
-    }
-
-    private void formatNewsResponse(AnalyticsNewsResponseDto newsResponseDto) {
-        Long chatId = newsResponseDto.getChatId();
-        List<NewsSourceResponseDto> data = newsResponseDto.getData();
-        for (NewsSourceResponseDto newsSource : data) {
-            String source = newsSource.getSource();
-            for (NewsDto item : newsSource.getNews().getItems()) {
-                String title = item.getTitle();
-                String description = item.getDescription();
-                String url = item.getUrl();
-                String pubDate = item.getPubDate().format(DateTimeFormatter.ofPattern("d MMMM yyyy, HH:mm"));
-
-                String result = String.format(
-                        """
-                                <b>Источник:</b> %s
-                                <b>Название:</b> %s
-                                <b>Описание:</b> %s
-                                <b>Дата публикации:</b> %s
-                                <a href="%s">Ссылка на новость</a>
-                                """,
-                        source, title, description, pubDate, url
-                );
-                sendMessage(chatId, result, "HTML", true);
-            }
-        }
-    }
-
-    private void formatPulseNewsResponse(StockNewsPulseResponseDto news, Long chatId) {
-        for (StockNewsDto stockNewsDto : news.getItems()) {
-
-            String tickers = stockNewsDto.getContent().getInstruments().stream()
-                    .map(NewsTickerDto::getTicker)
-                    .collect(Collectors.joining(", "));
-
-            String creator = stockNewsDto.getOwner().getNickname();
-
-            String text = stockNewsDto.getContent().getText();
-
-            LocalDateTime time = LocalDateTime.parse(stockNewsDto.getInserted(),
-                    DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSX"));
-            String createdAt = time.format(DateTimeFormatter.ofPattern("d MMMM yyyy, HH:mm"));
-
-            String url = stockNewsDto.getUrl();
-
-            String result = String.format(
-                    """
-                            <b>Новость по тикерам:</b> %s
-                            <b>Дата публикации:</b> %s
-                            <b>Создатель:</b> %s
-                            <b>Содержание:</b> %s
-                            <a href="%s">Ссылка на новость</a>
-                            """,
-                    tickers, createdAt, creator, text, url
-            );
-            sendMessage(chatId, result, "HTML", true);
-        }
-    }
-
-    private void formatIdeasResponse(StockIdeasPulseResponseDto ideas, Long chatId) {
-        for (StockIdeaDto idea : ideas.getIdeas()) {
-            BrokerIdeaDto broker = idea.getBroker();
-            String title = idea.getTitle();
-            String brokerName = broker.getName();
-            String brokerAccuracy = broker.getAccuracy() + "%";
-            String tickers = idea.getTickers().stream()
-                    .map(TickerIdeaDto::getTicker)
-                    .collect(Collectors.joining(", "));
-            String yield = idea.getYield() + "%";
-            String targetYield = idea.getTargetYield() + "%";
-            String priceStart = String.valueOf(idea.getPriceStart());
-            String actualPrice = String.valueOf(idea.getActualPrice());
-            String dateStart = idea.getDateStart();
-            String dateEnd = idea.getDateEnd();
-            String url = idea.getUrl();
-
-            String result = String.format(
-                    """
-                            <b>Название идеи:</b> %s
-                            <b>Брокер:</b> %s
-                            <b>Точность прогнозов брокека:</b> %s
-                            <b>Тикеры:</b> %s
-                            <b>Начальная цена:</b> %s
-                            <b>Актуальная цена:</b> %s
-                            <b>Доходность:</b> %s
-                            <b>Целевая доходность:</b> %s
-                            <b>Дата начала:</b> %s
-                            <b>Дата окончания:</b> %s
-                            <a href="%s">Ссылка на идею</a>
-                            """,
-                    title, brokerName, brokerAccuracy, tickers, priceStart,
-                    actualPrice, yield, targetYield, dateStart, dateEnd, url
-            );
-            sendMessage(chatId, result, "HTML", true);
-        }
-    }
-
-    private void formatBrandInfoResponse(BrandInfoPulseResponseDto brandInfo, Long chatId) {
-        BrandInfoDto fullInfo = brandInfo.getBrandInfo();
-        String tickers = String.join(",", fullInfo.getTickers());
-        String brandName = fullInfo.getName();
-        String brandDescription = fullInfo.getBrandInfo();
-        String sector = fullInfo.getSector();
-        String country = fullInfo.getCountry();
-        String url = fullInfo.getExternalLinks().getMain();
-
-        String result = String.format(
-                """
-                        <b>Название компании:</b> %s
-                        <b>Тикеры компании:</b> %s
-                        <b>Описание компании:</b> %s
-                        <b>Сектор:</b> %s
-                        <b>Страна:</b> %s
-                        <a href="%s">Сайт компании</a>
-                        """,
-                brandName, tickers, brandDescription, sector, country, url
-        );
-
-        sendMessage(chatId, result, "HTML", true);
     }
 
     private void processTokenInput(Long chatId, String token, Update update) {
@@ -493,23 +351,11 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private void promptForCommand(Long chatId) {
-        sendMessage(chatId, "Извините, я не понимаю это сообщение. Пожалуйста, используйте команду или введите /help для списка доступных команд.");
+        sendMessage(chatId, MessageConstants.UNKNOWN_COMMAND_MESSAGE);
     }
 
     private void processHelpCommand(Long chatId) {
-        String helpMessage = """
-            Этот бот позволяет вам управлять вашими избранными акциями и получать уведомления, когда их цены изменяются более чем на 3% за последний час.
-
-            Вот список доступных команд:
-
-            /start - Начать взаимодействие с ботом
-            /token - Обновить ваш Tinkoff токен
-            /info - Получить информацию о вашем аккаунте
-            /favourites - Просмотреть ваши избранные акции
-            /refresh - Обновить данные и получить актуальную информацию
-            /cancel - Отменить текущую операцию
-            /help - Показать это сообщение помощи
-            """;
+        String helpMessage = MessageConstants.HELP_MESSAGE;
         sendMessage(chatId, helpMessage);
     }
 
@@ -596,12 +442,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private String formatUserInfo(UserInfoDto userInfo) {
-        return """
-                Информация о пользователе:
-                -------------------------
-                ID: %s
-                Никнейм: %s
-                """.formatted(
+        return MessageConstants.USER_INFO_MESSAGE.formatted(
                 userInfo.getExternalId(),
                 getSafeValue(userInfo.getTelegramNickname())
         );

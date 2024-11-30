@@ -14,4 +14,3 @@ public class StockNewsDto {
     private NewsContentDto content;
     private String url;
 }
-

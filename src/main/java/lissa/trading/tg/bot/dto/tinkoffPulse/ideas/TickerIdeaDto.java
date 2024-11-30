@@ -12,4 +12,3 @@ public class TickerIdeaDto {
     private String name;
     private Double price;
 }
-

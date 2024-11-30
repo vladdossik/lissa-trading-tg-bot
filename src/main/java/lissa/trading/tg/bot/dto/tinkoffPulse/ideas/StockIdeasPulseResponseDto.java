@@ -15,4 +15,3 @@ import java.util.List;
 public class StockIdeasPulseResponseDto extends PulseResponseDto {
     private List<StockIdeaDto> ideas;
 }
-

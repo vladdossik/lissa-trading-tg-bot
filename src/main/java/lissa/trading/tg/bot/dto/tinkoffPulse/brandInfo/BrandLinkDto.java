@@ -10,4 +10,3 @@ import lombok.NoArgsConstructor;
 public class BrandLinkDto {
     private String main;
 }
-

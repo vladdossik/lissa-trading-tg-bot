@@ -17,4 +17,3 @@ public class BrandInfoDto {
     private String sector;
     private String country;
 }
-

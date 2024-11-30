@@ -1,7 +1,7 @@
 package lissa.trading.tg.bot.config;
 
 import com.github.benmanes.caffeine.cache.Cache;
-import lissa.trading.tg.bot.analytics.AnalyticsProducer;
+import lissa.trading.tg.bot.analytics.ProcessingAnalyticsResponseService;
 import lissa.trading.tg.bot.bot.TelegramBot;
 import lissa.trading.tg.bot.bot.UserState;
 import lissa.trading.tg.bot.model.FavouriteStock;
@@ -25,14 +25,15 @@ public class BotConfig {
     @Bean
     public TelegramBot telegramBot(@Value("${bot.name}") String botName,
                                    @Value("${bot.token}") String botToken,
-                                   UserService userService, UserProcessingService userProcessingService, FavouriteStockRepository favouriteStockRepository,
-                                   AnalyticsProducer analyticsProducer,
+                                   UserService userService, UserProcessingService userProcessingService,
+                                   FavouriteStockRepository favouriteStockRepository,
+                                   ProcessingAnalyticsResponseService processingAnalyticsResponseService,
                                    @Qualifier("stocksForInfoCache") Cache<Long, List<String>> stocksForInfoCache,
                                    @Qualifier("userStateCache") Cache<Long, UserState> userStates,
                                    @Qualifier("userEntityCache") Cache<Long, UserEntity> userEntities,
                                    @Qualifier("favouriteStockCache") Cache<Long, List<FavouriteStock>> favouriteStockCache) {
-        return new TelegramBot(botName, botToken, userService, userProcessingService, favouriteStockRepository, 
-                               analyticsProducer, stocksForInfoCache, userStates, userEntities, favouriteStockCache);
+        return new TelegramBot(botName, botToken, userService, userProcessingService, favouriteStockRepository,
+                processingAnalyticsResponseService, stocksForInfoCache, userStates, userEntities, favouriteStockCache);
     }
 
     @Bean
