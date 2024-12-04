@@ -12,14 +12,13 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class AnalyticsSender {
 
-    @Value("${integration.rabbit.exchange}")
+    @Value("${integration.rabbit.exchanges.analytics}")
     private String analyticsExchange;
 
-    @Value("${integration.rabbit.outbound.analytics.routing-key.request.key}")
+    @Value("${integration.rabbit.routing-keys.tg-bot.request}")
     private String requestRoutingKey;
 
     private final RabbitTemplate rabbitTemplate;
-
 
     public void sendRequest(AnalyticsRequestDto request) {
         log.info("Sending message {}", request);

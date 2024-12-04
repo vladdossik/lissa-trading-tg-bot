@@ -36,9 +36,7 @@ public class MessageConstants {
             """;
 
     public static final String NEWS_MESSAGE = """
-            <b>Источник:</b> %s
             <b>Название:</b> %s
-            <b>Описание:</b> %s
             <b>Дата публикации:</b> %s
             <a href="%s">Ссылка на новость</a>
             """;
@@ -80,4 +78,11 @@ public class MessageConstants {
             ID: %s
             Никнейм: %s
             """;
+
+    public static final String TICKERS_LIST_PATTERN = "^[A-Za-z0-9]+(,[A-Za-z0-9]+)*$";
+
+    public static final String INVALID_TICKERS_MESSAGE = "Некорректный формат. Убедитесь, " +
+            "что тикеры указаны через запятую без пробелов или других символов.";
+
+    public static final String SENT_REQUEST_MESSAGE = "Запрос отправлен, ожидайте...";
 }

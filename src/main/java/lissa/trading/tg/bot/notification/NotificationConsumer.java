@@ -5,6 +5,7 @@ import lissa.trading.tg.bot.config.RabbitMQConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -14,7 +15,7 @@ public class NotificationConsumer {
 
     private final TelegramBot telegramBot;
 
-    @RabbitListener(queues = RabbitMQConfig.NOTIFICATION_QUEUE)
+    @RabbitListener(queues = "${integration.rabbit.queues.outbound.notification}")
     public void receiveNotification(NotificationMessage message) {
         log.debug("Received notification for chat ID {}", message.getChatId());
         try {

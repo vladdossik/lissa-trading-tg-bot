@@ -2,7 +2,7 @@ package lissa.trading.tg.bot.analytics;
 
 import lissa.trading.tg.bot.analytics.dto.AnalyticsNewsResponseDto;
 import lissa.trading.tg.bot.analytics.dto.AnalyticsPulseResponseDto;
-import lissa.trading.tg.bot.bot.TelegramBot;
+import lissa.trading.tg.bot.analytics.service.AnalyticsResponseService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -13,19 +13,21 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class AnalyticsListener {
 
-    private final TelegramBot telegramBot;
+    private final AnalyticsResponseService responseService;
 
-    @RabbitListener(queues = "${integration.rabbit.inbound.analytics.pulse.queue}")
+    @RabbitListener(queues = "${integration.rabbit.queues.inbound.analytics.pulse}")
     private void handlePulseResponse(AnalyticsPulseResponseDto responseDto) {
         if (responseDto != null) {
-            telegramBot.handlePulseResponse(responseDto);
+            log.info("Successfully get pulse response");
+            responseService.processPulseResponse(responseDto);
         }
     }
 
-    @RabbitListener(queues = "${integration.rabbit.inbound.analytics.news.queue}")
+    @RabbitListener(queues = "${integration.rabbit.queues.inbound.analytics.news}")
     private void handleNewsResponse(AnalyticsNewsResponseDto newsResponseDto) {
         if (newsResponseDto != null) {
-            telegramBot.handleNewsResponse(newsResponseDto);
+            log.info("Successfully get news response");
+            responseService.processNewsResponse(newsResponseDto);
         }
     }
 }

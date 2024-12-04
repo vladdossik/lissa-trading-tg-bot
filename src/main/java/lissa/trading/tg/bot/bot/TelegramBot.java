@@ -4,10 +4,8 @@ import com.github.benmanes.caffeine.cache.Cache;
 import lissa.trading.lissa.auth.lib.dto.UserInfoDto;
 import lissa.trading.lissa.auth.lib.security.EncryptionService;
 import lissa.trading.tg.bot.analytics.AnalyticsInfoType;
-import lissa.trading.tg.bot.analytics.ProcessingAnalyticsResponseService;
-import lissa.trading.tg.bot.analytics.dto.AnalyticsNewsResponseDto;
-import lissa.trading.tg.bot.analytics.dto.AnalyticsPulseResponseDto;
 import lissa.trading.tg.bot.analytics.dto.AnalyticsRequestDto;
+import lissa.trading.tg.bot.analytics.service.AnalyticsRequestService;
 import lissa.trading.tg.bot.model.FavouriteStock;
 import lissa.trading.tg.bot.model.UserEntity;
 import lissa.trading.tg.bot.notification.NotificationMessage;
@@ -44,7 +42,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     private final UserService userService;
     private final UserProcessingService userProcessingService;
     private final FavouriteStockRepository favouriteStockRepository;
-    private final ProcessingAnalyticsResponseService processingAnalyticsResponseService;
+    private final AnalyticsRequestService requestService;
 
     private final Cache<Long, UserState> userStates;
     private final Cache<Long, UserEntity> userEntities;
@@ -58,7 +56,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             @Value("${bot.token}") String botToken,
             UserService userService, UserProcessingService userProcessingService,
             FavouriteStockRepository favouriteStockRepository,
-            ProcessingAnalyticsResponseService processingAnalyticsResponseService,
+            AnalyticsRequestService requestService,
             @Qualifier("stocksForInfoCache") Cache<Long, List<String>> stocksForInfoCache,
             @Qualifier("userStateCache") Cache<Long, UserState> userStateCache,
             @Qualifier("userEntityCache") Cache<Long, UserEntity> userEntityCache,
@@ -69,7 +67,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         this.userService = userService;
         this.userProcessingService = userProcessingService;
         this.favouriteStockRepository = favouriteStockRepository;
-        this.processingAnalyticsResponseService = processingAnalyticsResponseService;
+        this.requestService = requestService;
         this.stocksForInfoCache = stocksForInfoCache;
         this.userStates = userStateCache;
         this.userEntities = userEntityCache;
@@ -105,20 +103,16 @@ public class TelegramBot extends TelegramLongPollingBot {
         sendMessage(message.getChatId(), formattedText, "HTML", true);
     }
 
-    public void handlePulseResponse(AnalyticsPulseResponseDto responseDto) {
-        List<String> messages = processingAnalyticsResponseService.processPulseResponse(responseDto);
-        Long chatId = responseDto.getChatId();
+    public void printPulseResponse(List<String> messages, Long chatId) {
         for (String message : messages) {
             sendMessage(chatId, message, "HTML", true);
         }
-        userStates.put(responseDto.getChatId(), UserState.WAITING_FOR_NEXT_COMMAND);
-        sendMessage(responseDto.getChatId(), MessageConstants.CHOOSE_TYPE_MESSAGE);
+        userStates.put(chatId, UserState.WAITING_FOR_NEXT_COMMAND);
+        sendMessage(chatId, MessageConstants.CHOOSE_TYPE_MESSAGE);
     }
 
-    public void handleNewsResponse(AnalyticsNewsResponseDto newsResponseDto) {
-        List<String> news = processingAnalyticsResponseService.processNewsResponse(newsResponseDto);
-        Long chatId = newsResponseDto.getChatId();
-        for (String elem : news) {
+    public void printNewsResponse(List<String> messages, Long chatId) {
+        for (String elem : messages) {
             sendMessage(chatId, elem, "HTML", true);
         }
     }
@@ -248,22 +242,26 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private void processPulseTickers(Long chatId, String messageText) {
-        if (messageText.matches("^[A-Za-z0-9]+(,[A-Za-z0-9]+)*$")) {
+        if (messageText.matches(MessageConstants.TICKERS_LIST_PATTERN)) {
             List<String> tickers = Arrays.asList(messageText.split(","));
             stocksForInfoCache.put(chatId, tickers);
             sendMessage(chatId, MessageConstants.CHOOSE_TYPE_MESSAGE);
             userStates.put(chatId, UserState.WAITING_FOR_CHOOSE_TYPE);
         } else {
-            sendMessage(chatId, "Некорректный формат. Убедитесь, что тикеры указаны через запятую без пробелов или других символов.");
+            sendMessage(chatId, MessageConstants.INVALID_TICKERS_MESSAGE);
         }
     }
 
     private void processNewsTickers(Long chatId, String messageText) {
-        List<String> tickers = Arrays.asList(messageText.split(","));
-        AnalyticsRequestDto requestDto = new AnalyticsRequestDto(AnalyticsInfoType.NEWS, chatId, tickers);
-        processingAnalyticsResponseService.createRequest(requestDto);
-        sendMessage(chatId, "Запрос отправлен, ожидайте...");
-        userStates.put(chatId, UserState.WAITING_FOR_NEWS_RESPONSE);
+        if (messageText.matches(MessageConstants.TICKERS_LIST_PATTERN)) {
+            List<String> tickers = Arrays.asList(messageText.split(","));
+            AnalyticsRequestDto requestDto = new AnalyticsRequestDto(AnalyticsInfoType.NEWS, chatId, tickers);
+            requestService.sendRequest(requestDto);
+            sendMessage(chatId, MessageConstants.SENT_REQUEST_MESSAGE);
+            userStates.put(chatId, UserState.WAITING_FOR_NEWS_RESPONSE);
+        } else {
+            sendMessage(chatId, MessageConstants.INVALID_TICKERS_MESSAGE);
+        }
     }
 
     private void processChooseType(Long chatId, String messageText) {
@@ -292,8 +290,8 @@ public class TelegramBot extends TelegramLongPollingBot {
                 break;
         }
 
-        processingAnalyticsResponseService.createRequest(requestDto);
-        sendMessage(chatId, "Запрос отправлен, ожидайте...");
+        requestService.sendRequest(requestDto);
+        sendMessage(chatId, MessageConstants.SENT_REQUEST_MESSAGE);
         userStates.put(chatId, UserState.WAITING_FOR_PULSE_RESPONSE);
     }
 

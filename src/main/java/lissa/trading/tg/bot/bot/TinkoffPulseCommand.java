@@ -24,5 +24,4 @@ public enum TinkoffPulseCommand {
     public static TinkoffPulseCommand fromValue(String value) {
         return COMMAND_MAP.get(value);
     }
-
 }

@@ -1,10 +1,10 @@
 package lissa.trading.tg.bot.notification;
 
-import lissa.trading.tg.bot.config.RabbitMQConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -13,11 +13,12 @@ import org.springframework.stereotype.Service;
 public class NotificationProducer {
 
     private final RabbitTemplate rabbitTemplate;
-    private static final String NOTIFICATION_QUEUE = RabbitMQConfig.NOTIFICATION_QUEUE;
+    @Value("${integration.rabbit.queues.outbound.notification}")
+    private String notificationQueue;
 
     public void sendNotification(NotificationMessage message) {
         try {
-            rabbitTemplate.convertAndSend(NOTIFICATION_QUEUE, message, m -> {
+            rabbitTemplate.convertAndSend(notificationQueue, message, m -> {
                 m.getMessageProperties().setDeliveryMode(MessageDeliveryMode.PERSISTENT);
                 return m;
             });
