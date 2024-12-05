@@ -15,7 +15,7 @@ public class NotificationConsumer {
 
     private final TelegramBot telegramBot;
 
-    @RabbitListener(queues = "${integration.rabbit.queues.outbound.notification}")
+    @RabbitListener(queues = "${integration.rabbit.outbound.notification.queue}")
     public void receiveNotification(NotificationMessage message) {
         log.debug("Received notification for chat ID {}", message.getChatId());
         try {

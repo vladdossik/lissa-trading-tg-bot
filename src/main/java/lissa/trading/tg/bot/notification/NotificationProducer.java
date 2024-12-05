@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 public class NotificationProducer {
 
     private final RabbitTemplate rabbitTemplate;
-    @Value("${integration.rabbit.queues.outbound.notification}")
+    @Value("${integration.rabbit.outbound.notification.queue}")
     private String notificationQueue;
 
     public void sendNotification(NotificationMessage message) {

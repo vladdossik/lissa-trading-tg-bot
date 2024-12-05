@@ -15,7 +15,7 @@ public class AnalyticsListener {
 
     private final AnalyticsResponseService responseService;
 
-    @RabbitListener(queues = "${integration.rabbit.queues.inbound.analytics.pulse}")
+    @RabbitListener(queues = "${integration.rabbit.inbound.analytics.pulse.queue}")
     private void handlePulseResponse(AnalyticsPulseResponseDto responseDto) {
         if (responseDto != null) {
             log.info("Successfully get pulse response");
@@ -23,7 +23,7 @@ public class AnalyticsListener {
         }
     }
 
-    @RabbitListener(queues = "${integration.rabbit.queues.inbound.analytics.news}")
+    @RabbitListener(queues = "${integration.rabbit.inbound.analytics.news.queue}")
     private void handleNewsResponse(AnalyticsNewsResponseDto newsResponseDto) {
         if (newsResponseDto != null) {
             log.info("Successfully get news response");

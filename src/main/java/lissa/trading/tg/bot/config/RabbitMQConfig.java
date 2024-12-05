@@ -14,28 +14,28 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitMQConfig {
 
-    @Value("${integration.rabbit.queues.outbound.notification}")
+    @Value("${integration.rabbit.outbound.notification.queue}")
     public String notificationQueue;
 
-    @Value("${integration.rabbit.queues.outbound.analytics.request}")
+    @Value("${integration.rabbit.outbound.analytics.queue}")
     private String requestQueue;
 
-    @Value("${integration.rabbit.queues.inbound.analytics.pulse}")
+    @Value("${integration.rabbit.inbound.analytics.pulse.queue}")
     private String pulseResponseQueue;
 
-    @Value("${integration.rabbit.queues.inbound.analytics.news}")
+    @Value("${integration.rabbit.inbound.analytics.news.queue}")
     private String newsResponseQueue;
 
-    @Value("${integration.rabbit.exchanges.analytics}")
+    @Value("${integration.rabbit.outbound.analytics.exchange}")
     private String analyticsExchange;
 
-    @Value("${integration.rabbit.routing-keys.tg-bot.request}")
+    @Value("${integration.rabbit.outbound.analytics.routing-key}")
     private String requestRoutingKey;
 
-    @Value("${integration.rabbit.routing-keys.tg-bot.response.pulse}")
+    @Value("${integration.rabbit.inbound.analytics.pulse.routing-key}")
     private String responsePulseRoutingKey;
 
-    @Value("${integration.rabbit.routing-keys.tg-bot.response.news}")
+    @Value("${integration.rabbit.inbound.analytics.news.routing-key}")
     private String responseNewsRoutingKey;
 
     @Bean
