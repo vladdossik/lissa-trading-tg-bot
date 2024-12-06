@@ -9,6 +9,8 @@ public enum BotCommand {
     TOKEN("/token"),
     INFO("/info"),
     FAVOURITES("/favourites"),
+    PULSE("/pulse"),
+    NEWS("/news"),
     CANCEL("/cancel"),
     REFRESH("/refresh"),
     HELP("/help"),
