@@ -6,6 +6,7 @@ import lissa.trading.tg.bot.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jeasy.random.EasyRandom;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @RequiredArgsConstructor
 @Order(3)
+@Profile("local")
 public class FavouriteStockInitializerService implements DataInitializerService {
 
     private final FavouriteStockRepository stockRepository;
