@@ -2,7 +2,7 @@ server:
   port: 8083
 
 bot:
-  token: ${BOT_TOKEN}
+  token: 8035040685:AAEeh-W-y20WLfJJkH7XnAiKoHXUiLyaKnY
   name: "lissa_trading_bot"
 
 spring:
@@ -44,6 +44,16 @@ integration:
     auth-service-url: http://localhost:8081
     user-service-url: http://localhost:8080
     tinkoff-api-service-url: http://localhost:8082
+  rabbit:
+    user-service:
+      exchange:
+        name: user-notifications-exchange;
+      favourite-stocks-queue:
+        name: favourite-stocks
+        routing-key: userService.favourite-stocks
+      user-update-queue:
+        name: user-update
+        routing-key: tgBot.user-update
 
 telegram-bot:
   notification:

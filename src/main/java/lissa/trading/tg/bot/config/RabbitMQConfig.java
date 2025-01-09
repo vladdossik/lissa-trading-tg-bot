@@ -1,5 +1,8 @@
 package lissa.trading.tg.bot.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
@@ -43,6 +46,15 @@ public class RabbitMQConfig {
         return new TopicExchange(analyticsExchange);
     }
 
+    @Value("${integration.rabbit.user-service.exchange.name}")
+    private String exchange;
+
+    @Value("${integration.rabbit.user-service.favourite-stocks-queue.name}")
+    private String userFavoriteStocksQueue;
+
+    @Value("${integration.rabbit.user-service.user-update-queue.name}")
+    private String userUpdateQueue;
+
     @Bean
     public Queue notificationQueue() {
         return new Queue(notificationQueue, true);
@@ -56,6 +68,34 @@ public class RabbitMQConfig {
     @Bean
     public Queue pulseResponseQueue() {
         return new Queue(pulseResponseQueue, true);
+    }
+
+    @Bean
+    public TopicExchange userExchange() {
+        return new TopicExchange(exchange);
+    }
+
+    @Bean
+    public Queue userFavoriteStocksQueue() {
+        return new Queue(userFavoriteStocksQueue, true);
+    }
+
+    @Bean public Queue userUpdateQueue() {
+        return new Queue(userUpdateQueue, true);
+    }
+
+    @Bean
+    public Binding favoriteStocksBinding(Queue userFavoriteStocksQueue, TopicExchange userExchange) {
+        return BindingBuilder.bind(userFavoriteStocksQueue)
+                .to(userExchange)
+                .with("*.favourite-stocks");
+    }
+
+    @Bean
+    public Binding userUpdateBinding(Queue userUpdateQueue, TopicExchange userExchange) {
+        return BindingBuilder.bind(userUpdateQueue)
+                .to(userExchange)
+                .with("*.user-update");
     }
 
     @Bean

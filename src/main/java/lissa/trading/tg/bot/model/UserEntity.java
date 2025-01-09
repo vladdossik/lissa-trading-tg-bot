@@ -13,7 +13,6 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -59,8 +58,7 @@ public class UserEntity {
     @Column(name = "telegram_nickname", unique = true)
     private String telegramNickname;
 
-    @NotNull
-    @Column(name = "tinkoff_token", nullable = false)
+    @Column(name = "tinkoff_token")
     private String tinkoffToken;
 
     @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
@@ -72,7 +70,7 @@ public class UserEntity {
     private Set<Role> roles = new HashSet<>();
 
     @Size(min = 3, message = "Password must be at least 3 characters")
-    @Column(name = "password", nullable = false)
+    @Column(name = "password")
     private String password;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)

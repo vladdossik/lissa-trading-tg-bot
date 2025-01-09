@@ -1,7 +1,13 @@
 package lissa.trading.tg.bot.service;
 
 import lissa.trading.lissa.auth.lib.dto.UserInfoDto;
-import lissa.trading.lissa.auth.lib.security.EncryptionService;
+import lissa.trading.tg.bot.dto.notification.OperationEnum;
+import lissa.trading.tg.bot.dto.tinkoff.stock.TickersDto;
+import lissa.trading.tg.bot.dto.user.UserPatchDto;
+import lissa.trading.tg.bot.service.consumer.NotificationContext;
+import lissa.trading.tg.bot.exception.UserNotFoundException;
+import lissa.trading.tg.bot.feign.UserServiceClient;
+import lissa.trading.tg.bot.mapper.UserMapper;
 import lissa.trading.tg.bot.model.FavouriteStock;
 import lissa.trading.tg.bot.model.Role;
 import lissa.trading.tg.bot.model.Roles;
@@ -11,14 +17,13 @@ import lissa.trading.tg.bot.payload.response.UserRegistrationResponse;
 import lissa.trading.tg.bot.repository.FavouriteStockRepository;
 import lissa.trading.tg.bot.repository.RoleRepository;
 import lissa.trading.tg.bot.repository.UserRepository;
-import lissa.trading.tg.bot.tinkoff.dto.Stock;
-import lissa.trading.tg.bot.tinkoff.dto.account.FavouriteStocksDto;
-import lissa.trading.tg.bot.tinkoff.dto.account.TinkoffTokenDto;
-import lissa.trading.tg.bot.tinkoff.feign.TinkoffAccountClient;
+import lissa.trading.tg.bot.service.publisher.UserUpdatesPublisher;
+import lissa.trading.tg.bot.service.publisher.UserUpdatesPublisherImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,9 +31,9 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,8 +44,11 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder encoder;
-    private final TinkoffAccountClient tinkoffAccountClient;
     private final FavouriteStockRepository favouriteStockRepository;
+    private final UserUpdatesPublisher userUpdatesPublisher;
+    private final UserServiceClient userServiceClient;
+    private final UserMapper userMapper;
+    private final NotificationContext notificationContext;
 
     @Override
     @Transactional
@@ -49,14 +57,12 @@ public class UserServiceImpl implements UserService {
         if (isTelegramNicknameInUse(signupRequest.getTelegramNickname())) {
             return new UserRegistrationResponse("Error: Nickname already in use!", false);
         }
-
         UserEntity newUser = createUserEntity(signupRequest);
-        setTinkoffTokenForClient(newUser.getTinkoffToken());
-
         try {
-            updateUserFromTinkoffData(newUser);
             userRepository.save(newUser);
             log.info("User {} registered successfully", newUser.getTelegramNickname());
+            userUpdatesPublisher.publishUserUpdateNotification(newUser, OperationEnum.REGISTER);
+            notificationContext.clear();
             return new UserRegistrationResponse("User registered successfully!", true);
         } catch (Exception e) {
             log.error("Failed to register user {}: {}", newUser.getTelegramNickname(), e.getMessage(), e);
@@ -92,7 +98,8 @@ public class UserServiceImpl implements UserService {
         userRepository.findByTelegramNickname(telegramNickname).ifPresent(user -> {
             user.setTinkoffToken(newToken);
             userRepository.save(user);
-            updateUserFromTinkoffData(user);
+            userUpdatesPublisher.publishUserUpdateNotification(user, OperationEnum.UPDATE);
+            notificationContext.clear();
             log.info("Updated Tinkoff token for user: {}", telegramNickname);
         });
     }
@@ -113,75 +120,57 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void updateUserFromTinkoffData(UserEntity user) {
-        log.info("Updating user {} with Tinkoff data", user.getTelegramNickname());
-        userRepository.save(user);
-        updateUserFavouriteStocks(user);
+    @Transactional
+    public void deleteUser(UUID externalId) {
+        UserEntity user = findByExternalId(externalId);
+        userRepository.delete(user);
     }
 
-    private void updateUserFavouriteStocks(UserEntity user) {
-        try {
-            FavouriteStocksDto favouriteStocksDto = tinkoffAccountClient.getFavouriteStocks();
-            log.info("Received {} favourite stocks from Tinkoff for user {}", favouriteStocksDto.getFavouriteStocks().size(), user.getTelegramNickname());
-            Set<FavouriteStock> updatedFavouriteStocks = fetchFavouriteStocksFromDto(favouriteStocksDto, user);
+    @Override
+    @Transactional
+    public void updateUserInformation(UUID externalId, UserPatchDto userPatchDto) {
+        UserEntity user = findByExternalId(externalId);
+        userMapper.updateUserFromDto(userPatchDto, user);
+        userRepository.save(user);
+    }
 
-            syncFavouriteStocks(user, updatedFavouriteStocks);
+    @Override
+    @Transactional
+    public void updateUserFavouriteStocks(UUID externalId, List<FavouriteStock> favouriteStocks) {
+        UserEntity user = findByExternalId(externalId);
+        try {
+            Set<FavouriteStock> userFavouriteStocks = user.getFavouriteStocks();
+            userFavouriteStocks.clear();
+            userFavouriteStocks.addAll(new HashSet<>(favouriteStocks));
+            saveFavouriteStocks(userFavouriteStocks, user);
             userRepository.save(user);
-            log.info("User {} updated with {} favourite stocks", user.getTelegramNickname(), updatedFavouriteStocks.size());
+            log.info("User {} updated with {} favourite stocks", user.getTelegramNickname(), userFavouriteStocks.size());
         } catch (Exception e) {
             log.error("Failed to update user {} from Tinkoff data: {}", user.getTelegramNickname(), e.getMessage(), e);
         }
     }
 
-    private Set<FavouriteStock> fetchFavouriteStocksFromDto(FavouriteStocksDto favouriteStocksDto, UserEntity user) {
-        return favouriteStocksDto.getFavouriteStocks().stream()
-                .map(ticker -> fetchFavouriteStock(ticker, user))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
+    @Override
+    @Transactional
+    public void deleteUserFavouriteStocks(String telegramNickname, List<String> tickers) {
+        UserEntity user =  findByTelegramNickname(telegramNickname);
+        user.getFavouriteStocks().removeIf(ticker -> tickers.contains(ticker.getTicker()));
+        userRepository.save(user);
+        userUpdatesPublisher.publishUserFavoriteStocksUpdateNotification(user);
+        notificationContext.clear();
     }
 
-    private FavouriteStock fetchFavouriteStock(String ticker, UserEntity user) {
-        try {
-            Stock stock = tinkoffAccountClient.getStockByTicker(ticker);
-            return new FavouriteStock(
-                    null,
-                    user,
-                    ticker,
-                    stock.getFigi(),
-                    stock.getTicker(),
-                    stock.getName(),
-                    stock.getType(),
-                    stock.getCurrency()
-            );
-        } catch (Exception e) {
-            log.warn("Failed to get stock for ticker {}: {}", ticker, e.getMessage());
-            return null;
-        }
+    @Override
+    public void addUserFavouriteStocks(String telegramNickname, List<String> tickers) {
+        UserEntity user = findByTelegramNickname(telegramNickname);
+        userServiceClient.updateUserFavoriteStocks(user.getExternalId(), new TickersDto(tickers));
     }
 
-    private void syncFavouriteStocks(UserEntity user, Set<FavouriteStock> updatedFavouriteStocks) {
-        Set<FavouriteStock> existingFavouriteStocks = user.getFavouriteStocks();
-
-        existingFavouriteStocks.removeIf(fs -> updatedFavouriteStocks.stream()
-                .noneMatch(ufs -> ufs.getFigi().equals(fs.getFigi())));
-
-        for (FavouriteStock updatedStock : updatedFavouriteStocks) {
-            existingFavouriteStocks.stream()
-                    .filter(fs -> fs.getFigi().equals(updatedStock.getFigi()))
-                    .findFirst()
-                    .ifPresentOrElse(
-                            existingStock -> updateExistingStock(existingStock, updatedStock),
-                            () -> existingFavouriteStocks.add(updatedStock)
-                    );
-        }
-    }
-
-    private void updateExistingStock(FavouriteStock existingStock, FavouriteStock updatedStock) {
-        existingStock.setTicker(updatedStock.getTicker());
-        existingStock.setServiceTicker(updatedStock.getServiceTicker());
-        existingStock.setName(updatedStock.getName());
-        existingStock.setInstrumentType(updatedStock.getInstrumentType());
-        existingStock.setCurrency(updatedStock.getCurrency());
+    private void saveFavouriteStocks(Set<FavouriteStock> favoriteStocksEntities, UserEntity user) {
+        favoriteStocksEntities.forEach(stock -> {
+            stock.setUser(user);
+            favouriteStockRepository.save(stock);
+        });
     }
 
     private boolean isTelegramNicknameInUse(String telegramNickname) {
@@ -196,12 +185,12 @@ public class UserServiceImpl implements UserService {
         userEntity.setTinkoffToken(signupRequest.getTinkoffToken());
         userEntity.setRoles(resolveRoles(signupRequest.getRole()));
         userEntity.setPassword(encoder.encode(signupRequest.getPassword()));
+        UUID externalId = signupRequest.getExternalId();
+        if (externalId == null || externalId.toString().isEmpty()) {
+            externalId = UUID.randomUUID();
+        }
+        userEntity.setExternalId(externalId);
         return userEntity;
-    }
-
-    private void setTinkoffTokenForClient(String encryptedToken) {
-        String decryptedToken = EncryptionService.decrypt(encryptedToken);
-        tinkoffAccountClient.setTinkoffToken(new TinkoffTokenDto(decryptedToken));
     }
 
     private UserInfoDto mapUserEntityToDto(UserEntity userEntity) {
@@ -215,6 +204,17 @@ public class UserServiceImpl implements UserService {
                         .map(role -> role.getUserRole().name())
                         .toList())
                 .build();
+    }
+
+    private UserEntity findByExternalId(UUID externalId) {
+        return userRepository.findByExternalId(externalId)
+                .orElseThrow(() -> new UserNotFoundException("User with external id " + externalId + " not found"));
+    }
+
+    private UserEntity findByTelegramNickname(String telegramNickname) {
+        return userRepository.findByTelegramNickname(telegramNickname)
+                .orElseThrow(() -> new UserNotFoundException("User with telegramNickname "
+                                                                     + telegramNickname + " not found"));
     }
 
     private Set<Role> resolveRoles(Set<String> strRoles) {
