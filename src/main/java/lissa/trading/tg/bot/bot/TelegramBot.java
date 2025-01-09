@@ -3,7 +3,6 @@ package lissa.trading.tg.bot.bot;
 import com.github.benmanes.caffeine.cache.Cache;
 import lissa.trading.lissa.auth.lib.dto.UserInfoDto;
 import lissa.trading.lissa.auth.lib.security.EncryptionService;
-import lissa.trading.tg.bot.feign.UserServiceClient;
 import lissa.trading.tg.bot.analytics.AnalyticsInfoType;
 import lissa.trading.tg.bot.analytics.dto.AnalyticsRequestDto;
 import lissa.trading.tg.bot.analytics.service.AnalyticsRequestService;
@@ -15,7 +14,6 @@ import lissa.trading.tg.bot.payload.response.UserRegistrationResponse;
 import lissa.trading.tg.bot.repository.FavouriteStockRepository;
 import lissa.trading.tg.bot.service.UserProcessingService;
 import lissa.trading.tg.bot.service.UserService;
-import lissa.trading.tg.bot.utils.MessageConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,7 +23,6 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -53,10 +50,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     public TelegramBot(
             @Value("${bot.name}") String botName,
             @Value("${bot.token}") String botToken,
-            UserService userService, UserProcessingService userProcessingService,
-            FavouriteStockRepository favouriteStockRepository,
-            AnalyticsRequestService requestService,
-            @Qualifier("stocksForInfoCache") Cache<Long, List<String>> stocksForInfoCache,
+            UserService userService, UserProcessingService userProcessingService, FavouriteStockRepository favouriteStockRepository,
             @Qualifier("userStateCache") Cache<Long, UserState> userStateCache,
             @Qualifier("userEntityCache") Cache<Long, UserEntity> userEntityCache,
             @Qualifier("favouriteStockCache") Cache<Long, List<FavouriteStock>> favouriteStockCache
