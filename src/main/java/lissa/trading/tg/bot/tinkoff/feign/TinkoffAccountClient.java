@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@FeignClient(name = "tinkoff-service", url = "${integration.rest.tinkoff-api-service-url}/v1/internal")
+@FeignClient(name = "tinkoff-service", url = "${integration.rest.tinkoff-api-service.url}/v1/internal")
 public interface TinkoffAccountClient {
 
     @PostMapping("/set-token")
