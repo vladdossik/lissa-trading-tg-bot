@@ -43,17 +43,18 @@ integration:
   rest:
     auth-service-url: http://localhost:8081
     user-service-url: http://localhost:8080
-    tinkoff-api-service-url: http://localhost:8082
   rabbit:
     user-service:
       exchange:
         name: user-notifications-exchange;
       favourite-stocks-queue:
         name: favourite-stocks
-        routing-key: userService.favourite-stocks
+        routing-key: tgBot.favourite-stocks
+        template: "*.favourite-stocks"
       user-update-queue:
         name: user-update
         routing-key: tgBot.user-update
+        # TODO: добавить темплейты который хуй пойми почему убрались
 
 telegram-bot:
   notification:

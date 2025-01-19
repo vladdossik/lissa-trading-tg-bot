@@ -1,6 +1,5 @@
 package lissa.trading.tg.bot.dto.notification;
 
-import lissa.trading.tg.bot.model.FavouriteStock;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,5 +14,5 @@ import java.util.UUID;
 @Builder
 public class UserFavoriteStocksUpdateDto {
     private UUID externalId;
-    List<FavouriteStock> favoriteStocksEntity;
+    private List<NotificationFavouriteStockDto> favoriteStocks;
 }

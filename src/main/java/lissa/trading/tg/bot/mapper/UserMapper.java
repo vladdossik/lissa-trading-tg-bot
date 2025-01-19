@@ -4,6 +4,7 @@ import lissa.trading.tg.bot.dto.notification.UserUpdateNotificationDto;
 import lissa.trading.tg.bot.dto.user.UserPatchDto;
 import lissa.trading.tg.bot.model.UserEntity;
 import lissa.trading.tg.bot.payload.request.SignupRequest;
+import lissa.trading.tg.bot.utils.Tokens;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -35,6 +36,7 @@ public interface UserMapper {
         mapOptionalValue(userPatchDto.getTelegramNickname(), user::setTelegramNickname);
         mapOptionalValue(userPatchDto.getTinkoffToken(), user::setTinkoffToken);
         mapOptionalValue(userPatchDto.getExternalId(), user::setExternalId);
+        user.setTinkoffToken(Tokens.encryptToken(user.getTinkoffToken()));
         return user;
     }
 

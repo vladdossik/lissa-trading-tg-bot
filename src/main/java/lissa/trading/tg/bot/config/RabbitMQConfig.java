@@ -11,6 +11,7 @@ import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -55,6 +56,22 @@ public class RabbitMQConfig {
 
     @Value("${integration.rabbit.user-service.user-update-queue.name}")
     private String userUpdateQueue;
+
+    @Value("${integration.rabbit.user-service.favourite-stocks-queue.template}")
+    private String favoriteStocksQueueTemplate;
+
+    @Value("${integration.rabbit.user-service.user-update-queue.template}")
+    private String userUpdateQueueTemplate;
+
+    @Bean(name = "analyticsExchange")
+    public TopicExchange analyticsTopicExchange() {
+        return new TopicExchange(analyticsExchange);
+    }
+
+    @Bean(name = "userExchange")
+    public TopicExchange userExchange() {
+        return new TopicExchange(exchange);
+    }
 
     @Bean
     public Queue notificationQueue() {
@@ -105,17 +122,44 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Binding requestBinding(Queue requestQueue, TopicExchange topicExchange) {
+    public Queue userFavoriteStocksQueue() {
+        return new Queue(userFavoriteStocksQueue, true);
+    }
+
+    @Bean public Queue userUpdateQueue() {
+        return new Queue(userUpdateQueue, true);
+    }
+
+    @Bean
+    public Binding favoriteStocksBinding(Queue userFavoriteStocksQueue,
+                                         @Qualifier("userExchange") TopicExchange userExchange) {
+        return BindingBuilder.bind(userFavoriteStocksQueue)
+                .to(userExchange)
+                .with(favoriteStocksQueueTemplate);
+    }
+
+    @Bean
+    public Binding userUpdateBinding(Queue userUpdateQueue,
+                                     @Qualifier("userExchange") TopicExchange userExchange) {
+        return BindingBuilder.bind(userUpdateQueue)
+                .to(userExchange)
+                .with(userUpdateQueueTemplate);
+    }
+
+    @Bean
+    public Binding requestBinding(Queue requestQueue, @Qualifier("analyticsExchange") TopicExchange topicExchange) {
         return BindingBuilder.bind(requestQueue).to(topicExchange).with(requestRoutingKey);
     }
 
     @Bean
-    public Binding pulseResponseBinding(Queue pulseResponseQueue, TopicExchange topicExchange) {
+    public Binding pulseResponseBinding(Queue pulseResponseQueue,
+                                        @Qualifier("analyticsExchange") TopicExchange topicExchange) {
         return BindingBuilder.bind(pulseResponseQueue).to(topicExchange).with(responsePulseRoutingKey);
     }
 
     @Bean
-    public Binding newResponseBinding(Queue newsResponseQueue, TopicExchange topicExchange) {
+    public Binding newResponseBinding(Queue newsResponseQueue,
+                                      @Qualifier("analyticsExchange") TopicExchange topicExchange) {
         return BindingBuilder.bind(newsResponseQueue).to(topicExchange).with(responseNewsRoutingKey);
     }
 

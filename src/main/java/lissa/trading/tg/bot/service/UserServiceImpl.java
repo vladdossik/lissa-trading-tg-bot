@@ -4,6 +4,14 @@ import lissa.trading.lissa.auth.lib.dto.UserInfoDto;
 import lissa.trading.tg.bot.dto.notification.OperationEnum;
 import lissa.trading.tg.bot.dto.tinkoff.stock.TickersDto;
 import lissa.trading.tg.bot.dto.user.UserPatchDto;
+import lissa.trading.tg.bot.mapper.FavouriteStockMapper;
+import lissa.trading.tg.bot.service.consumer.NotificationContext;
+import lissa.trading.tg.bot.exception.UserNotFoundException;
+import lissa.trading.tg.bot.feign.UserServiceClient;
+import lissa.trading.tg.bot.mapper.UserMapper;
+import lissa.trading.tg.bot.dto.notification.OperationEnum;
+import lissa.trading.tg.bot.dto.tinkoff.stock.TickersDto;
+import lissa.trading.tg.bot.dto.user.UserPatchDto;
 import lissa.trading.tg.bot.service.consumer.NotificationContext;
 import lissa.trading.tg.bot.exception.UserNotFoundException;
 import lissa.trading.tg.bot.feign.UserServiceClient;
@@ -14,9 +22,9 @@ import lissa.trading.tg.bot.model.Roles;
 import lissa.trading.tg.bot.model.UserEntity;
 import lissa.trading.tg.bot.payload.request.SignupRequest;
 import lissa.trading.tg.bot.payload.response.UserRegistrationResponse;
-import lissa.trading.tg.bot.repository.FavouriteStockRepository;
 import lissa.trading.tg.bot.repository.RoleRepository;
 import lissa.trading.tg.bot.repository.UserRepository;
+import lissa.trading.tg.bot.service.publisher.UserUpdatesPublisher;
 import lissa.trading.tg.bot.service.publisher.UserUpdatesPublisher;
 import lissa.trading.tg.bot.service.publisher.UserUpdatesPublisherImpl;
 import lombok.RequiredArgsConstructor;
@@ -29,8 +37,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -44,7 +54,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder encoder;
-    private final FavouriteStockRepository favouriteStockRepository;
+    private final FavouriteStockMapper favouriteStockMapper;
     private final UserUpdatesPublisher userUpdatesPublisher;
     private final UserServiceClient userServiceClient;
     private final UserMapper userMapper;
@@ -122,8 +132,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void deleteUser(UUID externalId) {
-        UserEntity user = findByExternalId(externalId);
-        userRepository.delete(user);
+        userRepository.delete(findByExternalId(externalId));
     }
 
     @Override
@@ -136,24 +145,44 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void updateUserFavouriteStocks(UUID externalId, List<FavouriteStock> favouriteStocks) {
+    public void setUpdatedFavouriteStocksToUser(UUID externalId, List<FavouriteStock> favouriteStocks) {
         UserEntity user = findByExternalId(externalId);
         try {
-            Set<FavouriteStock> userFavouriteStocks = user.getFavouriteStocks();
-            userFavouriteStocks.clear();
-            userFavouriteStocks.addAll(new HashSet<>(favouriteStocks));
-            saveFavouriteStocks(userFavouriteStocks, user);
+            List<FavouriteStock> existingStocks = new ArrayList<>(user.getFavouriteStocks());
+
+            Map<String, FavouriteStock> existingStocksMap = existingStocks.stream()
+                    .collect(Collectors.toMap(FavouriteStock::getTicker, stock -> stock));
+
+            List<FavouriteStock> updatedStocks = favouriteStocks.stream()
+                    .map(newStock -> {
+                        FavouriteStock existingStock = existingStocksMap.get(newStock.getTicker());
+                        if (existingStock != null) {
+                            favouriteStockMapper.updateFavoriteStocksFromFavoriteStock(existingStock, newStock);
+                            return existingStock;
+                        } else {
+                            newStock.setUser(user);
+                            return newStock;
+                        }
+                    })
+                    .toList();
+
+            user.getFavouriteStocks().clear();
+            user.getFavouriteStocks().addAll(updatedStocks);
+
             userRepository.save(user);
-            log.info("User {} updated with {} favourite stocks", user.getTelegramNickname(), userFavouriteStocks.size());
+
+            log.info("User {} updated with {} favourite stocks",
+                     user.getTelegramNickname(), favouriteStocks.size());
         } catch (Exception e) {
-            log.error("Failed to update user {} from Tinkoff data: {}", user.getTelegramNickname(), e.getMessage(), e);
+            log.error("Failed to update user {} with new favourite stocks: {}",
+                      user.getTelegramNickname(), e.getMessage(), e);
         }
     }
 
     @Override
     @Transactional
     public void deleteUserFavouriteStocks(String telegramNickname, List<String> tickers) {
-        UserEntity user =  findByTelegramNickname(telegramNickname);
+        UserEntity user = findByTelegramNickname(telegramNickname);
         user.getFavouriteStocks().removeIf(ticker -> tickers.contains(ticker.getTicker()));
         userRepository.save(user);
         userUpdatesPublisher.publishUserFavoriteStocksUpdateNotification(user);
@@ -163,14 +192,8 @@ public class UserServiceImpl implements UserService {
     @Override
     public void addUserFavouriteStocks(String telegramNickname, List<String> tickers) {
         UserEntity user = findByTelegramNickname(telegramNickname);
-        userServiceClient.updateUserFavoriteStocks(user.getExternalId(), new TickersDto(tickers));
-    }
-
-    private void saveFavouriteStocks(Set<FavouriteStock> favoriteStocksEntities, UserEntity user) {
-        favoriteStocksEntities.forEach(stock -> {
-            stock.setUser(user);
-            favouriteStockRepository.save(stock);
-        });
+        userServiceClient.updateUserFavoriteStocks(
+                user.getExternalId(), new TickersDto(tickers));
     }
 
     private boolean isTelegramNicknameInUse(String telegramNickname) {

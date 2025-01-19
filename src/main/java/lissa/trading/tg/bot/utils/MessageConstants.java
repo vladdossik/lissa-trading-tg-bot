@@ -65,6 +65,8 @@ public class MessageConstants {
             /refresh - Обновить данные и получить актуальную информацию
             /pulse - Получить информацию об акциях из Tinkoff Pulse
             /news -  Получить новости по акциям из разных ресурсов
+            /addFavourites - Добавить любимую акцию по тикеру
+            /removeFavorites - Удалить любимую акцию по тикеру
             /cancel - Отменить текущую операцию
             /help - Показать это сообщение помощи
             """;
@@ -78,6 +80,20 @@ public class MessageConstants {
             ID: %s
             Никнейм: %s
             """;
+
+    public static final String ADD_TICKERS_MESSAGE = "Напишите тикеры компаний" +
+            "которые желаете добавить в избранное\n" +
+            "в формате: YDEX,SBER,VTBR";
+
+    public static final String REMOVE_TICKERS_MESSAGE = "Напишите тикеры компаний" +
+            "которые желаете удалить из избранного\n" +
+            "в формате: YDEX,SBER,VTBR";
+
+    public static final String FAVORITES_OPERATION_SUCCESS = "Успешно, для просмотра используйте \"/favourites\"";
+
+
+    public static final String FAVORITES_OPERATION_FAIL = "Произошла внутренняя ошибка сервиса." +
+            " Повторите запрос позже";
 
     public static final String TICKERS_LIST_PATTERN = "^[A-Za-z0-9]+(,[A-Za-z0-9]+)*$";
 

@@ -11,6 +11,8 @@ import lissa.trading.tg.bot.notification.NotificationMessage;
 import lissa.trading.tg.bot.notification.NotificationProducer;
 import lissa.trading.tg.bot.repository.UserRepository;
 import lissa.trading.tg.bot.repository.UserStockPriceRepository;
+import lissa.trading.tg.bot.dto.tinkoff.stock.StockPrice;
+import lissa.trading.tg.bot.dto.tinkoff.stock.StocksPricesDto;
 import lissa.trading.tg.bot.dto.tinkoff.stock.FigiesDto;
 import lissa.trading.tg.bot.dto.tinkoff.stock.StockPrice;
 import lissa.trading.tg.bot.dto.tinkoff.stock.StocksPricesDto;
@@ -36,9 +38,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserProcessingService {
 
-    private static final Set<String> SUPPORTED_INSTRUMENT_TYPES = Set.of("share", "bond");
+    private static final Set<String> SUPPORTED_INSTRUMENT_TYPES = Set.of("share", "bond", "common_share");
 
-    private final UserService userService;
     private final UserRepository userRepository;
     private final UserStockPriceRepository userStockPriceRepository;
     private final UserServiceClient userServiceClient;

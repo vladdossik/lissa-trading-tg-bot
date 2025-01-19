@@ -24,7 +24,7 @@ public interface UserService {
 
     void updateUserInformation(UUID externalId, UserPatchDto userPatchDto);
 
-    void updateUserFavouriteStocks(UUID externalId, List<FavouriteStock> favouriteStocks);
+    void setUpdatedFavouriteStocksToUser(UUID externalId, List<FavouriteStock> favouriteStocks);
 
     void deleteUserFavouriteStocks(String telegramNickname, List<String> tickers);
 
@@ -33,5 +33,4 @@ public interface UserService {
     Optional<UserEntity> getUserByChatId(Long chatId);
 
     List<UserEntity> getAllUsers();
-
 }

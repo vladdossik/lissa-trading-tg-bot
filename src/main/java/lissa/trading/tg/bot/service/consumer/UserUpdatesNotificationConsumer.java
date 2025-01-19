@@ -8,5 +8,6 @@ public interface UserUpdatesNotificationConsumer {
     void receiveUserUpdateNotification(UserUpdateNotificationDto userUpdate,
                                        @Header("amqp_receivedRoutingKey") String routingKey);
 
-    void receiveUserFavoriteStocksUpdateNotification(UserFavoriteStocksUpdateDto userUpdate);
+    void receiveUserFavoriteStocksUpdateNotification(UserFavoriteStocksUpdateDto userFavoriteStocksUpdateDto,
+                                                     @Header("amqp_receivedRoutingKey") String routingKey);
 }

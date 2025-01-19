@@ -1,8 +1,10 @@
 package lissa.trading.tg.bot.service.publisher;
 
+import lissa.trading.tg.bot.dto.notification.NotificationFavouriteStockDto;
 import lissa.trading.tg.bot.dto.notification.OperationEnum;
 import lissa.trading.tg.bot.dto.notification.UserFavoriteStocksUpdateDto;
 import lissa.trading.tg.bot.dto.notification.UserUpdateNotificationDto;
+import lissa.trading.tg.bot.mapper.FavouriteStockMapper;
 import lissa.trading.tg.bot.mapper.UserMapper;
 import lissa.trading.tg.bot.model.UserEntity;
 import lissa.trading.tg.bot.service.consumer.NotificationContext;
@@ -13,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -22,6 +25,7 @@ public class UserUpdatesPublisherImpl implements UserUpdatesPublisher {
     private final RabbitTemplate rabbitTemplate;
     private final NotificationContext notificationContext;
     private final UserMapper userMapper;
+    private final FavouriteStockMapper favouriteStockMapper;
 
     @Value("${integration.rabbit.user-service.exchange.name}")
     private String exchangeName;
@@ -47,14 +51,16 @@ public class UserUpdatesPublisherImpl implements UserUpdatesPublisher {
     @Override
     public void publishUserFavoriteStocksUpdateNotification(UserEntity user) {
         if (notificationContext.isExternalSource()) {
+            log.info("external-source stocks update, returning");
             return;
         }
+        List<NotificationFavouriteStockDto> favouriteStocks = favouriteStockMapper
+                .toNotificationFavouriteStockDtoList(new ArrayList<>(user.getFavouriteStocks()));
         rabbitTemplate.convertAndSend(exchangeName, favouriteStocksRoutingKey,
                                       UserFavoriteStocksUpdateDto.builder()
-                                              .favoriteStocksEntity(new ArrayList<>(user.getFavouriteStocks()))
+                                              .favoriteStocks(favouriteStocks)
                                               .externalId(user.getExternalId())
                                               .build());
         log.info("published user favorite stocks update notification for: {}", user);
     }
-
 }
