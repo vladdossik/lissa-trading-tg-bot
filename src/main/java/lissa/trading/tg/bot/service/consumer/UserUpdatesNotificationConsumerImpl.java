@@ -37,6 +37,7 @@ public class UserUpdatesNotificationConsumerImpl implements UserUpdatesNotificat
                                               @Header("amqp_receivedRoutingKey") String routingKey) {
         log.info("received user update notification: {}", userUpdateDto);
         if(routingKey.equals(userUpdateRoutingKey)) {
+            log.info("not processing user update notification: {}", userUpdateDto);
             return;
         }
         notificationContext.setFromExternalSource(true);

@@ -9,13 +9,6 @@ import lissa.trading.tg.bot.service.consumer.NotificationContext;
 import lissa.trading.tg.bot.exception.UserNotFoundException;
 import lissa.trading.tg.bot.feign.UserServiceClient;
 import lissa.trading.tg.bot.mapper.UserMapper;
-import lissa.trading.tg.bot.dto.notification.OperationEnum;
-import lissa.trading.tg.bot.dto.tinkoff.stock.TickersDto;
-import lissa.trading.tg.bot.dto.user.UserPatchDto;
-import lissa.trading.tg.bot.service.consumer.NotificationContext;
-import lissa.trading.tg.bot.exception.UserNotFoundException;
-import lissa.trading.tg.bot.feign.UserServiceClient;
-import lissa.trading.tg.bot.mapper.UserMapper;
 import lissa.trading.tg.bot.model.FavouriteStock;
 import lissa.trading.tg.bot.model.Role;
 import lissa.trading.tg.bot.model.Roles;
@@ -25,13 +18,10 @@ import lissa.trading.tg.bot.payload.response.UserRegistrationResponse;
 import lissa.trading.tg.bot.repository.RoleRepository;
 import lissa.trading.tg.bot.repository.UserRepository;
 import lissa.trading.tg.bot.service.publisher.UserUpdatesPublisher;
-import lissa.trading.tg.bot.service.publisher.UserUpdatesPublisher;
-import lissa.trading.tg.bot.service.publisher.UserUpdatesPublisherImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -100,7 +90,6 @@ public class UserServiceImpl implements UserService {
         return userRepository.findAll();
     }
 
-    // --- Обновление данных пользователя ---
     @Override
     @Transactional
     @CacheEvict(value = "users", key = "#telegramNickname")

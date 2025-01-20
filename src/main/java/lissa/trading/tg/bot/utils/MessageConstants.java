@@ -101,4 +101,7 @@ public class MessageConstants {
             "что тикеры указаны через запятую без пробелов или других символов.";
 
     public static final String SENT_REQUEST_MESSAGE = "Запрос отправлен, ожидайте...";
+
+    public static final String INVALID_TOKEN_MESSAGE = "Невалидный токен, вместо тинькофф инвестиций" +
+            " будет использоваться Московская биржа";
 }

@@ -14,6 +14,8 @@ public enum BotCommand {
     CANCEL("/cancel"),
     REFRESH("/refresh"),
     HELP("/help"),
+    ADD_FAVOURITES("/addFavourites"),
+    REMOVE_FAVOURITES("/removeFavourites"),
     PULSE("/pulse"),
     NEWS("/news"),
     UNKNOWN("");

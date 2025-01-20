@@ -51,6 +51,13 @@ public class TelegramBot extends TelegramLongPollingBot {
     public TelegramBot(
             @Value("${bot.name}") String botName,
             @Value("${bot.token}") String botToken,
+            UserService userService, UserProcessingService userProcessingService,
+            FavouriteStockRepository favouriteStockRepository,
+            AnalyticsRequestService requestService,
+            ProcessingAnalyticsResponseService processingAnalyticsResponseService,
+            UserService userService, FavouriteStockRepository favouriteStockRepository,
+            AnalyticsProducer analyticsProducer,
+            @Qualifier("stocksForInfoCache") Cache<Long, List<String>> stocksForInfoCache,
             UserService userService, UserProcessingService userProcessingService, FavouriteStockRepository favouriteStockRepository,
             @Qualifier("userStateCache") Cache<Long, UserState> userStateCache,
             @Qualifier("userEntityCache") Cache<Long, UserEntity> userEntityCache,
@@ -145,7 +152,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private void processTokenCommand(Long chatId) {
-        sendMessage(chatId, "Пожалуйста, предоставьте ваш новый Tinkoff токен. Вы можете отменить операцию в любое время, введя команду /cancel.");
+        sendMessage(chatId, "Пожалуйста, предоставьте ваш новый Tinkoff токен. Обновлять токен можно раз в 5 минут. Вы можете отменить операцию в любое время, введя команду /cancel.");
         userStates.put(chatId, UserState.WAITING_FOR_NEW_TOKEN);
     }
 
@@ -278,7 +285,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     private void processTokenInput(Long chatId, String token, Update update) {
         String validatedToken = Tokens.validateToken(token) ? token : "";
         if (validatedToken.isEmpty()) {
-            sendMessage(chatId, "Невалидный токен, вместо тинькофф инвестиций будет использоваться Московская биржа");
+            sendMessage(chatId, MessageConstants.INVALID_TOKEN_MESSAGE);
         }
         UserEntity user = createUserEntityWithToken(validatedToken, update);
         userEntities.put(chatId, user);
@@ -306,9 +313,10 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private void processNewTokenInput(Long chatId, String newToken, Update update) {
-        if (!isValidToken(newToken)) {
-            sendMessage(chatId, "Некорректный Tinkoff токен. Пожалуйста, предоставьте корректный токен.");
-            return;
+        String validatedToken = Tokens.validateToken(newToken) ? newToken : "";
+
+        if (validatedToken.isEmpty()) {
+            sendMessage(chatId, "Невалидный токен, вместо тинькофф инвестиций будет использоваться Московская биржа");
         }
 
         String telegramNickname = getSafeValue(update.getMessage().getFrom().getUserName());

@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.UUID;
 
-@FeignClient(name = "user-service", url = "${integration.rest.user-service-url}/v1/internal")
+@FeignClient(name = "user-service", url = "${integration.rest.user-service.url}/v1/internal")
 public interface UserServiceClient {
 
     @GetMapping("/update/favouriteStocksPrices/{externalId}")

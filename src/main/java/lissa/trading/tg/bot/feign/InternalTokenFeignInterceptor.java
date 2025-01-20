@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class InternalTokenFeignInterceptor implements RequestInterceptor {
 
-    @Value("${security.internal.token}")
+    @Value("${integration.rest.user-service.token}")
     private String internalToken;
 
     @Override
