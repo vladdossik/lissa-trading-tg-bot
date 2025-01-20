@@ -33,11 +33,7 @@ public class BotConfig {
                                    @Qualifier("userEntityCache") Cache<Long, UserEntity> userEntities,
                                    @Qualifier("favouriteStockCache") Cache<Long, List<FavouriteStock>> favouriteStockCache) {
         return new TelegramBot(botName, botToken, userService, userProcessingService, favouriteStockRepository,
-                requestService, stocksForInfoCache, userStates, userEntities, favouriteStockCache);
-                processingAnalyticsResponseService, stocksForInfoCache, userStates, userEntities, favouriteStockCache);
-        return new TelegramBot(botName, botToken, userService, userProcessingService, favouriteStockRepository, userStates, userEntities, favouriteStockCache);
-        return new TelegramBot(botName, botToken, userService, userProcessingService, favouriteStockRepository,
-                requestService, stocksForInfoCache, userStates, userEntities, favouriteStockCache);
+                               requestService, stocksForInfoCache, userStates, userEntities, favouriteStockCache);
     }
 
     @Bean
