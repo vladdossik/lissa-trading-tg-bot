@@ -27,14 +27,14 @@ public class UserUpdatesPublisherImpl implements UserUpdatesPublisher {
     private final UserMapper userMapper;
     private final FavouriteStockMapper favouriteStockMapper;
 
-    @Value("${integration.rabbit.user-service.exchange.name}")
+    @Value("${integration.rabbit.exchanges.user-notifications}")
     private String exchangeName;
 
-    @Value("${integration.rabbit.user-service.user-update-queue.routing-key}")
-    private String userUpdateRoutingKey;
+    @Value("${integration.rabbit.tg-bot.queues.user-update-queue.routing-key}")
+    private String tgBotUpdateQueueRoutingKey;
 
-    @Value("${integration.rabbit.user-service.favourite-stocks-queue.routing-key}")
-    private String favouriteStocksRoutingKey;
+    @Value("${integration.rabbit.tg-bot.queues.favorite-stocks-queue.routing-key}")
+    private String tgBotFavouriteStocksQueueRoutingKey;
 
     @Override
     public void publishUserUpdateNotification(UserEntity user, OperationEnum operationEnum) {
@@ -44,8 +44,8 @@ public class UserUpdatesPublisherImpl implements UserUpdatesPublisher {
         }
         UserUpdateNotificationDto updateDto = userMapper.toUserUpdateNotificationDto(user);
         updateDto.setOperation(operationEnum);
-        rabbitTemplate.convertAndSend(exchangeName, userUpdateRoutingKey, updateDto);
-        log.info("published user update notification: {}", updateDto);
+        rabbitTemplate.convertAndSend(exchangeName, tgBotUpdateQueueRoutingKey, updateDto);
+        log.info("published user update notification for: {}", user.getExternalId());
     }
 
     @Override
@@ -54,13 +54,13 @@ public class UserUpdatesPublisherImpl implements UserUpdatesPublisher {
             log.info("external-source stocks update, returning");
             return;
         }
-        List<NotificationFavouriteStockDto> favouriteStocks = favouriteStockMapper
+        List<NotificationFavouriteStockDto> favoriteStocksNotificationDtoList = favouriteStockMapper
                 .toNotificationFavouriteStockDtoList(new ArrayList<>(user.getFavouriteStocks()));
-        rabbitTemplate.convertAndSend(exchangeName, favouriteStocksRoutingKey,
+        rabbitTemplate.convertAndSend(exchangeName, tgBotFavouriteStocksQueueRoutingKey,
                                       UserFavoriteStocksUpdateDto.builder()
-                                              .favoriteStocks(favouriteStocks)
+                                              .favoriteStocks(favoriteStocksNotificationDtoList)
                                               .externalId(user.getExternalId())
                                               .build());
-        log.info("published user favorite stocks update notification for: {}", user);
+        log.info("published user favorite stocks update notification for: {}", user.getExternalId());
     }
 }

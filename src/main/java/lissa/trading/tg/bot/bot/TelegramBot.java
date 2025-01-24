@@ -15,7 +15,7 @@ import lissa.trading.tg.bot.repository.FavouriteStockRepository;
 import lissa.trading.tg.bot.service.UserProcessingService;
 import lissa.trading.tg.bot.service.UserService;
 import lissa.trading.tg.bot.utils.MessageConstants;
-import lissa.trading.tg.bot.utils.Tokens;
+import lissa.trading.tg.bot.utils.TokenUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -283,9 +283,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private void processTickersToAdd(Long chatId, String messageText, Update update) {
-        if (!messageText.matches(MessageConstants.TICKERS_LIST_PATTERN)) {
-            sendMessage(chatId, MessageConstants.INVALID_TICKERS_MESSAGE);
-        }
+        validateTickersMessage(chatId, messageText);
         List<String> tickers = Arrays.asList(messageText.split(","));
         String telegramNickname = getSafeValue(update.getMessage().getFrom().getUserName());
         try {
@@ -301,9 +299,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private void processTickersToRemove(Long chatId, String messageText, Update update) {
-        if (!messageText.matches(MessageConstants.TICKERS_LIST_PATTERN)) {
-            sendMessage(chatId, MessageConstants.INVALID_TICKERS_MESSAGE);
-        }
+        validateTickersMessage(chatId, messageText);
         List<String> tickers = Arrays.asList(messageText.split(","));
         String telegramNickname = getSafeValue(update.getMessage().getFrom().getUserName());
         try {
@@ -349,7 +345,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private void processTokenInput(Long chatId, String token, Update update) {
-        String validatedToken = Tokens.validateToken(token) ? token : "";
+        String validatedToken = TokenUtils.validateToken(token) ? token : "";
         if (validatedToken.isEmpty()) {
             sendMessage(chatId, MessageConstants.INVALID_TOKEN_MESSAGE);
         }
@@ -379,7 +375,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private void processNewTokenInput(Long chatId, String newToken, Update update) {
-        String validatedToken = Tokens.validateToken(newToken) ? newToken : "";
+        String validatedToken = TokenUtils.validateToken(newToken) ? newToken : "";
 
         if (validatedToken.isEmpty()) {
             sendMessage(chatId, MessageConstants.INVALID_TOKEN_MESSAGE);
@@ -542,5 +538,13 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     private String getSafeValue(String value) {
         return value != null ? value : "Не указано";
+    }
+
+    private void validateTickersMessage(Long chatId, String text) {
+        if(!text.matches(MessageConstants.TICKERS_LIST_PATTERN)) {
+            sendMessage(chatId, MessageConstants.INVALID_TICKERS_MESSAGE);
+            log.error("invalid tickers message: {} in chat: {}", text, chatId);
+            throw new RuntimeException("Invalid tickers messsage: " + text + " in chat: " + chatId);
+        }
     }
 }

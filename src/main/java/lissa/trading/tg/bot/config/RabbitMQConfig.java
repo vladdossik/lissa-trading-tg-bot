@@ -27,8 +27,23 @@ public class RabbitMQConfig {
     @Value("${integration.rabbit.inbound.analytics.news.queue}")
     private String newsResponseQueue;
 
+    @Value("${integration.rabbit.user-service.queues.favourite-stocks-queue.name}")
+    private String userServiceFavoriteStocksQueue;
+
+    @Value("${integration.rabbit.user-service.queues.user-update-queue.name}")
+    private String userServiceUpdateQueue;
+
+    @Value("${integration.rabbit.tg-bot.queues.favorite-stocks-queue.name}")
+    private String tgBotFavoriteStocksQueue;
+
+    @Value("${integration.rabbit.tg-bot.queues.user-update-queue.name}")
+    private String tgBotUserUpdateQueue;
+
     @Value("${integration.rabbit.outbound.analytics.exchange}")
     private String analyticsExchange;
+
+    @Value("${integration.rabbit.exchanges.user-notifications}")
+    private String exchange;
 
     @Value("${integration.rabbit.outbound.analytics.routing-key}")
     private String requestRoutingKey;
@@ -39,30 +54,17 @@ public class RabbitMQConfig {
     @Value("${integration.rabbit.inbound.analytics.news.routing-key}")
     private String responseNewsRoutingKey;
 
-    @Value("${integration.rabbit.user-service.exchange.name}")
-    private String exchange;
+    @Value("${integration.rabbit.user-service.queues.favourite-stocks-queue.routing-key}")
+    private String userServiceFavouriteStocksQueueRoutingKey;
 
-    @Value("${integration.rabbit.user-service.favourite-stocks-queue.name}")
-    private String userFavoriteStocksQueue;
+    @Value("${integration.rabbit.user-service.queues.user-update-queue.routing-key}")
+    private String userServiceUpdateQueueRoutingKey;
 
-    @Value("${integration.rabbit.user-service.user-update-queue.name}")
-    private String userUpdateQueue;
+    @Value("${integration.rabbit.tg-bot.queues.favorite-stocks-queue.routing-key}")
+    private String tgBotFavouriteStocksQueueRoutingKey;
 
-    @Value("${integration.rabbit.user-service.favourite-stocks-queue.template}")
-    private String favoriteStocksQueueTemplate;
-
-    @Value("${integration.rabbit.user-service.user-update-queue.template}")
-    private String userUpdateQueueTemplate;
-
-    @Bean(name = "analyticsExchange")
-    public TopicExchange analyticsTopicExchange() {
-        return new TopicExchange(analyticsExchange);
-    }
-
-    @Bean(name = "userExchange")
-    public TopicExchange userExchange() {
-        return new TopicExchange(exchange);
-    }
+    @Value("${integration.rabbit.tg-bot.queues.user-update-queue.routing-key}")
+    private String tgBotUserUpdateQueueRoutingKey;
 
     @Bean
     public Queue notificationQueue() {
@@ -85,29 +87,57 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Queue userFavoriteStocksQueue() {
-        return new Queue(userFavoriteStocksQueue, true);
+    public Queue userServiceFavoriteStocksQueue() {
+        return new Queue(userServiceFavoriteStocksQueue, true);
     }
 
     @Bean
-    public Queue userUpdateQueue() {
-        return new Queue(userUpdateQueue, true);
+    public Queue userServiceUserUpdateQueue() {
+        return new Queue(userServiceUpdateQueue, true);
     }
 
     @Bean
-    public Binding favoriteStocksBinding(Queue userFavoriteStocksQueue,
-                                         @Qualifier("userExchange") TopicExchange userExchange) {
-        return BindingBuilder.bind(userFavoriteStocksQueue)
+    public Queue tgBotFavoriteStocksQueue() {return new Queue(tgBotFavoriteStocksQueue, true);}
+
+    @Bean
+    public Queue tgBotUserUpdateQueue() {return new Queue(tgBotUserUpdateQueue, true);}
+
+    @Bean(name = "analyticsExchange")
+    public TopicExchange analyticsTopicExchange() {
+        return new TopicExchange(analyticsExchange);
+    }
+
+    @Bean(name = "userExchange")
+    public TopicExchange userExchange() {
+        return new TopicExchange(exchange);
+    }
+
+    @Bean
+    public Binding userServiceFavoriteStocksBinding(Queue userServiceFavoriteStocksQueue, TopicExchange userExchange) {
+        return BindingBuilder.bind(userServiceFavoriteStocksQueue)
                 .to(userExchange)
-                .with(favoriteStocksQueueTemplate);
+                .with(userServiceFavouriteStocksQueueRoutingKey);
     }
 
     @Bean
-    public Binding userUpdateBinding(Queue userUpdateQueue,
-                                     @Qualifier("userExchange") TopicExchange userExchange) {
-        return BindingBuilder.bind(userUpdateQueue)
+    public Binding userServiceUserUpdateBinding(Queue userServiceUserUpdateQueue, TopicExchange userExchange) {
+        return BindingBuilder.bind(userServiceUserUpdateQueue)
                 .to(userExchange)
-                .with(userUpdateQueueTemplate);
+                .with(userServiceUpdateQueueRoutingKey);
+    }
+
+    @Bean
+    public Binding tgBotFavoriteStocksBinding(Queue tgBotFavoriteStocksQueue, TopicExchange userExchange) {
+        return BindingBuilder.bind(tgBotFavoriteStocksQueue)
+                .to(userExchange)
+                .with(tgBotFavouriteStocksQueueRoutingKey);
+    }
+
+    @Bean
+    public Binding tgBotUserUpdateBinding(Queue tgBotUserUpdateQueue, TopicExchange userExchange) {
+        return BindingBuilder.bind(tgBotUserUpdateQueue)
+                .to(userExchange)
+                .with(tgBotUserUpdateQueueRoutingKey);
     }
 
     @Bean

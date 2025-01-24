@@ -9,8 +9,6 @@ import lissa.trading.tg.bot.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -24,36 +22,17 @@ public class UserUpdatesNotificationConsumerImpl implements UserUpdatesNotificat
     private final UserRepository userRepository;
     private final FavouriteStockMapper favouriteStockMapper;
 
-
-    @Value("${integration.rabbit.user-service.user-update-queue.routing-key}")
-    private String userUpdateRoutingKey;
-
-    @Value("${integration.rabbit.user-service.favourite-stocks-queue.routing-key}")
-    private String userFavoriteStocksRoutingKey;
-
-    @RabbitListener(queues = "${integration.rabbit.user-service.user-update-queue.name}")
+    @RabbitListener(queues = "${integration.rabbit.user-service.queues.user-update-queue.name}")
     @Override
-    public void receiveUserUpdateNotification(UserUpdateNotificationDto userUpdateDto,
-                                              @Header("amqp_receivedRoutingKey") String routingKey) {
+    public void receiveUserUpdateNotification(UserUpdateNotificationDto userUpdateDto) {
         log.info("received user update notification: {}", userUpdateDto);
-        if(routingKey.equals(userUpdateRoutingKey)) {
-            log.info("not processing user update notification: {}", userUpdateDto);
-            return;
-        }
         notificationContext.setFromExternalSource(true);
-        log.info("processing user update notification: {}", userUpdateDto);
         processUserUpdateNotification(userUpdateDto);
     }
 
-    @RabbitListener(queues = "${integration.rabbit.user-service.favourite-stocks-queue.name}")
+    @RabbitListener(queues = "${integration.rabbit.user-service.queues.favourite-stocks-queue.name}")
     @Override
-    public void receiveUserFavoriteStocksUpdateNotification(UserFavoriteStocksUpdateDto userFavoriteStocksUpdateDto,
-                                                            @Header("amqp_receivedRoutingKey") String routingKey) {
-        log.info("received user favorite stocks update notification: {}", userFavoriteStocksUpdateDto);
-        if(routingKey.equals(userFavoriteStocksRoutingKey)) {
-            log.info("not processing user favorite stocks update notification: {}", userFavoriteStocksUpdateDto);
-            return;
-        }
+    public void receiveUserFavoriteStocksUpdateNotification(UserFavoriteStocksUpdateDto userFavoriteStocksUpdateDto) {
         log.info("received user favorite stocks update notification: {}", userFavoriteStocksUpdateDto);
         notificationContext.setFromExternalSource(true);
         processUserFavoriteStocksUpdateNotification(userFavoriteStocksUpdateDto);

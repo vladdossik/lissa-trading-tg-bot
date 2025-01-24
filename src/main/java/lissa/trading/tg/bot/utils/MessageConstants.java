@@ -85,7 +85,7 @@ public class MessageConstants {
             "которые желаете добавить в избранное\n" +
             "в формате: YDEX,SBER,VTBR";
 
-    public static final String REMOVE_TICKERS_MESSAGE = "Напишите тикеры компаний" +
+    public static final String REMOVE_TICKERS_MESSAGE = "Напишите тикеры компаний " +
             "которые желаете удалить из избранного\n" +
             "в формате: YDEX,SBER,VTBR";
 

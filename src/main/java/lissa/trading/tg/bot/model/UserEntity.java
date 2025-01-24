@@ -24,6 +24,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.OffsetDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -76,6 +77,9 @@ public class UserEntity {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<FavouriteStock> favouriteStocks = new HashSet<>();
 
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<UserStockPrice> userStockPrices = new HashSet<>();
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
@@ -89,5 +93,10 @@ public class UserEntity {
         if (this.externalId == null) {
             this.externalId = UUID.randomUUID();
         }
+    }
+
+    public void clearAndSetFavouriteStocks(List<FavouriteStock> updatedFavoriteStocks) {
+        favouriteStocks.clear();
+        favouriteStocks.addAll(updatedFavoriteStocks);
     }
 }

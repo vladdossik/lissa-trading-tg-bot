@@ -47,17 +47,24 @@ integration:
       token: YzNSaGRHbHpkR2xqY3kxcGJuUmxjbTVoYkMxclpYaz0K
 
   rabbit:
-    user-service:
-      exchange:
-        name: user-notifications-exchange;
-      favourite-stocks-queue:
-        name: favourite-stocks
-        routing-key: tgBot.favourite-stocks
-        template: "*.favourite-stocks"
-      user-update-queue:
-        name: user-update
-        routing-key: tgBot.user-update
-        template: "*.user-update"
+      exchanges:
+        user-notifications: user-notifications-exchange
+      user-service:
+        queues:
+          favourite-stocks-queue:
+            name: user-service-favourite-stocks
+            routing-key: userService.favourite-stocks
+          user-update-queue:
+            name: user-service-user-update
+            routing-key: userService.user-update
+      tg-bot:
+        queues:
+          favorite-stocks-queue:
+            name: tg-bot-favorite-stocks
+            routing-key: tgBot.favourite-stocks
+          user-update-queue:
+            name: tg-bot-user-update
+            routing-key: tgBot.user-update
 
 telegram-bot:
   notification:

@@ -9,7 +9,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-@Profile("prod")
+@Profile("local")
 public class MainDataInitializer {
 
     private final List<DataInitializerService> dataInitializerServices;

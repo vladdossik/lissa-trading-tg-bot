@@ -155,8 +155,7 @@ public class UserServiceImpl implements UserService {
                     })
                     .toList();
 
-            user.getFavouriteStocks().clear();
-            user.getFavouriteStocks().addAll(updatedStocks);
+            user.clearAndSetFavouriteStocks(updatedStocks);
 
             userRepository.save(user);
 
