@@ -27,22 +27,22 @@ public class RabbitMQConfig {
     @Value("${integration.rabbit.inbound.analytics.news.queue}")
     private String newsResponseQueue;
 
-    @Value("${integration.rabbit.user-service.queues.favourite-stocks-queue.name}")
+    @Value("${integration.rabbit.inbound.user-service.favourite-stocks.queue}")
     private String userServiceFavoriteStocksQueue;
 
-    @Value("${integration.rabbit.user-service.queues.user-update-queue.name}")
+    @Value("${integration.rabbit.inbound.user-service.favourite-stocks.queue}")
     private String userServiceUpdateQueue;
 
-    @Value("${integration.rabbit.tg-bot.queues.favorite-stocks-queue.name}")
+    @Value("${integration.rabbit.outbound.tg-bot.favourite-stocks.queue}")
     private String tgBotFavoriteStocksQueue;
 
-    @Value("${integration.rabbit.tg-bot.queues.user-update-queue.name}")
+    @Value("${integration.rabbit.outbound.tg-bot.user-update.queue}")
     private String tgBotUserUpdateQueue;
 
     @Value("${integration.rabbit.outbound.analytics.exchange}")
     private String analyticsExchange;
 
-    @Value("${integration.rabbit.exchanges.user-notifications}")
+    @Value("${integration.rabbit.outbound.user-notifications.exchange}")
     private String exchange;
 
     @Value("${integration.rabbit.outbound.analytics.routing-key}")
@@ -54,16 +54,16 @@ public class RabbitMQConfig {
     @Value("${integration.rabbit.inbound.analytics.news.routing-key}")
     private String responseNewsRoutingKey;
 
-    @Value("${integration.rabbit.user-service.queues.favourite-stocks-queue.routing-key}")
+    @Value("${integration.rabbit.inbound.user-service.favourite-stocks.routing-key}")
     private String userServiceFavouriteStocksQueueRoutingKey;
 
-    @Value("${integration.rabbit.user-service.queues.user-update-queue.routing-key}")
+    @Value("${integration.rabbit.inbound.user-service.user-update.routing-key}")
     private String userServiceUpdateQueueRoutingKey;
 
-    @Value("${integration.rabbit.tg-bot.queues.favorite-stocks-queue.routing-key}")
+    @Value("${integration.rabbit.outbound.tg-bot.favourite-stocks.routing-key}")
     private String tgBotFavouriteStocksQueueRoutingKey;
 
-    @Value("${integration.rabbit.tg-bot.queues.user-update-queue.routing-key}")
+    @Value("${integration.rabbit.outbound.tg-bot.user-update.routing-key}")
     private String tgBotUserUpdateQueueRoutingKey;
 
     @Bean

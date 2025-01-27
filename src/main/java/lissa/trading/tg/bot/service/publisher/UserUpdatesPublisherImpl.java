@@ -27,13 +27,13 @@ public class UserUpdatesPublisherImpl implements UserUpdatesPublisher {
     private final UserMapper userMapper;
     private final FavouriteStockMapper favouriteStockMapper;
 
-    @Value("${integration.rabbit.exchanges.user-notifications}")
+    @Value("${integration.rabbit.outbound.user-notifications.exchange}")
     private String exchangeName;
 
-    @Value("${integration.rabbit.tg-bot.queues.user-update-queue.routing-key}")
+    @Value("${integration.rabbit.outbound.tg-bot.user-update.routing-key}")
     private String tgBotUpdateQueueRoutingKey;
 
-    @Value("${integration.rabbit.tg-bot.queues.favorite-stocks-queue.routing-key}")
+    @Value("${integration.rabbit.outbound.tg-bot.favourite-stocks.routing-key}")
     private String tgBotFavouriteStocksQueueRoutingKey;
 
     @Override
