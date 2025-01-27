@@ -15,6 +15,7 @@ import lissa.trading.tg.bot.repository.FavouriteStockRepository;
 import lissa.trading.tg.bot.service.UserProcessingService;
 import lissa.trading.tg.bot.service.UserService;
 import lissa.trading.tg.bot.utils.MessageConstants;
+import lissa.trading.tg.bot.utils.TokenUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -150,6 +151,8 @@ public class TelegramBot extends TelegramLongPollingBot {
             case CANCEL -> processCancelCommand(chatId);
             case REFRESH -> processRefreshCommand(chatId);
             case HELP -> processHelpCommand(chatId);
+            case ADD_FAVOURITES -> processAddFavouritesCommand(chatId);
+            case REMOVE_FAVOURITES -> processRemoveFavouritesCommand(chatId);
             default -> sendMessage(chatId, "Неизвестная команда.");
         }
     }
@@ -158,7 +161,10 @@ public class TelegramBot extends TelegramLongPollingBot {
         String telegramNickname = getSafeValue(update.getMessage().getFrom().getUserName());
 
         userService.getUserByTelegramNickname(telegramNickname).ifPresentOrElse(
-                user -> sendMessage(chatId, "Вы уже зарегистрированы."),
+                user -> {
+                    sendMessage(chatId, "Вы уже зарегистрированы.");
+                    userService.updateUserChatId(telegramNickname, chatId);
+                    },
                 () -> promptForTinkoffToken(chatId)
         );
     }
@@ -224,6 +230,16 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
+    private void processAddFavouritesCommand(Long chatId) {
+        sendMessage(chatId, MessageConstants.ADD_TICKERS_MESSAGE);
+        userStates.put(chatId, UserState.WAITING_FOR_TICKERS_TO_ADD);
+    }
+
+    private void processRemoveFavouritesCommand(Long chatId) {
+        sendMessage(chatId, MessageConstants.REMOVE_TICKERS_MESSAGE);
+        userStates.put(chatId, UserState.WAITING_FOR_TICKERS_TO_REMOVE);
+    }
+
     private void handleUserState(Long chatId, String messageText, Update update) {
         UserState state = userStates.getIfPresent(chatId);
         if (state != null) {
@@ -234,6 +250,8 @@ public class TelegramBot extends TelegramLongPollingBot {
                 case WAITING_FOR_PULSE_TICKERS -> processPulseTickers(chatId, messageText);
                 case WAITING_FOR_CHOOSE_TYPE, WAITING_FOR_NEXT_COMMAND -> processChooseType(chatId, messageText);
                 case WAITING_FOR_NEWS_TICKERS -> processNewsTickers(chatId, messageText);
+                case WAITING_FOR_TICKERS_TO_ADD -> processTickersToAdd(chatId, messageText, update);
+                case WAITING_FOR_TICKERS_TO_REMOVE -> processTickersToRemove(chatId, messageText, update);
                 default -> promptForCommand(chatId);
             }
         } else {
@@ -262,6 +280,37 @@ public class TelegramBot extends TelegramLongPollingBot {
         } else {
             sendMessage(chatId, MessageConstants.INVALID_TICKERS_MESSAGE);
         }
+    }
+
+    private void processTickersToAdd(Long chatId, String messageText, Update update) {
+        validateTickersMessage(chatId, messageText);
+        List<String> tickers = Arrays.asList(messageText.split(","));
+        String telegramNickname = getSafeValue(update.getMessage().getFrom().getUserName());
+        try {
+            log.info("trying to add tickers {} to {}", telegramNickname, tickers);
+            userService.addUserFavouriteStocks(telegramNickname, tickers);
+        } catch(Exception e) {
+            log.error("Error adding user favourite stocks {}", e.getMessage());
+            sendMessage(chatId, MessageConstants.FAVORITES_OPERATION_FAIL);
+            return;
+        }
+        sendMessage(chatId, MessageConstants.FAVORITES_OPERATION_SUCCESS);
+        favouriteStockCache.invalidate(chatId);
+    }
+
+    private void processTickersToRemove(Long chatId, String messageText, Update update) {
+        validateTickersMessage(chatId, messageText);
+        List<String> tickers = Arrays.asList(messageText.split(","));
+        String telegramNickname = getSafeValue(update.getMessage().getFrom().getUserName());
+        try {
+            userService.deleteUserFavouriteStocks(telegramNickname, tickers);
+        } catch(Exception e) {
+            log.error("Error deleting user favourite stocks {}", e.getMessage());
+            sendMessage(chatId, MessageConstants.FAVORITES_OPERATION_FAIL);
+            return;
+        }
+        sendMessage(chatId, MessageConstants.FAVORITES_OPERATION_SUCCESS);
+        favouriteStockCache.invalidate(chatId);
     }
 
     private void processChooseType(Long chatId, String messageText) {
@@ -296,15 +345,15 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private void processTokenInput(Long chatId, String token, Update update) {
-        if (isValidToken(token)) {
-            UserEntity user = createUserEntityWithToken(token, update);
-            userEntities.put(chatId, user);
-
-            sendMessage(chatId, "Ваш Tinkoff токен сохранен. Теперь введите пароль.");
-            userStates.put(chatId, UserState.PASSWORD);
-        } else {
-            sendMessage(chatId, "Некорректный Tinkoff токен. Он должен начинаться с 't.' и иметь длину 88 символов.");
+        String validatedToken = TokenUtils.validateToken(token) ? token : "";
+        if (validatedToken.isEmpty()) {
+            sendMessage(chatId, MessageConstants.INVALID_TOKEN_MESSAGE);
         }
+        UserEntity user = createUserEntityWithToken(validatedToken, update);
+        userEntities.put(chatId, user);
+
+        sendMessage(chatId, "Ваш Tinkoff токен сохранен. Теперь введите пароль.");
+        userStates.put(chatId, UserState.PASSWORD);
     }
 
     private void processPasswordInput(Long chatId, String password) {
@@ -326,9 +375,10 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private void processNewTokenInput(Long chatId, String newToken, Update update) {
-        if (!isValidToken(newToken)) {
-            sendMessage(chatId, "Некорректный Tinkoff токен. Пожалуйста, предоставьте корректный токен.");
-            return;
+        String validatedToken = TokenUtils.validateToken(newToken) ? newToken : "";
+
+        if (validatedToken.isEmpty()) {
+            sendMessage(chatId, MessageConstants.INVALID_TOKEN_MESSAGE);
         }
 
         String telegramNickname = getSafeValue(update.getMessage().getFrom().getUserName());
@@ -338,8 +388,8 @@ public class TelegramBot extends TelegramLongPollingBot {
                     sendMessage(chatId, "Обновление токена, пожалуйста, подождите...");
                     CompletableFuture.runAsync(() -> {
                         try {
-                            String encryptedToken = EncryptionService.encrypt(newToken);
-                            userService.updateUserToken(user.getTelegramNickname(), encryptedToken);
+                            userService.updateUserToken(user.getTelegramNickname(),
+                                                        EncryptionService.encrypt(validatedToken));
                             sendMessage(chatId, "Ваш Tinkoff токен обновлен.");
                             clearUserSession(chatId);
                         } catch (Exception e) {
@@ -351,7 +401,6 @@ public class TelegramBot extends TelegramLongPollingBot {
                 () -> sendMessage(chatId, "Пользователь не найден. Пожалуйста, зарегистрируйтесь сначала.")
         );
     }
-
 
     private void promptForTinkoffToken(Long chatId) {
         String messageText = "Пожалуйста, предоставьте ваш <a href=\"https://www.tbank.ru/invest/settings/api/\">Tinkoff токен</a>.";
@@ -457,10 +506,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         );
     }
 
-    private boolean isValidToken(String token) {
-        return token != null && token.startsWith("t.") && token.length() == 88;
-    }
-
     private boolean isValidPassword(String password) {
         return password != null && password.length() >= 3;
     }
@@ -493,5 +538,13 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     private String getSafeValue(String value) {
         return value != null ? value : "Не указано";
+    }
+
+    private void validateTickersMessage(Long chatId, String text) {
+        if(!text.matches(MessageConstants.TICKERS_LIST_PATTERN)) {
+            sendMessage(chatId, MessageConstants.INVALID_TICKERS_MESSAGE);
+            log.error("invalid tickers message: {} in chat: {}", text, chatId);
+            throw new RuntimeException("Invalid tickers messsage: " + text + " in chat: " + chatId);
+        }
     }
 }

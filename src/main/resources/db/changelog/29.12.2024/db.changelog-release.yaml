@@ -1,7 +1,7 @@
 databaseChangeLog:
   - include:
-      file: "24.07.2024/db.changelog-release.yaml"
+      file: "01_update_favourite_stocks_table.yaml"
       relativeToChangelogFile: true
   - include:
-      file: "29.12.2024/db.changelog-release.yaml"
+      file: "02_update_user_table.yaml"
       relativeToChangelogFile: true

@@ -11,8 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotNull;
-import lissa.trading.tg.bot.tinkoff.dto.Currency;
+import lissa.trading.tg.bot.dto.tinkoff.Currency;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -39,8 +38,7 @@ public class FavouriteStock {
     @Column(name = "ticker")
     private String ticker;
 
-    @NotNull
-    @Column(name = "figi", nullable = false)
+    @Column(name = "figi")
     private String figi;
 
     @Column(name = "service_ticker")

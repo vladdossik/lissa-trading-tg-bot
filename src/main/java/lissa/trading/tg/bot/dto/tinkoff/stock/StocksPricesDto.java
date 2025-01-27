@@ -1,4 +1,4 @@
-package lissa.trading.tg.bot.tinkoff.dto.stock;
+package lissa.trading.tg.bot.dto.tinkoff.stock;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

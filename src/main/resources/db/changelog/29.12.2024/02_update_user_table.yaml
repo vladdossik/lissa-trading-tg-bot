@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 29.12.2024_01
+      author: blaskowitzwork@gmail.com
+      changes:
+        - dropNotNullConstraint:
+            tableName: users
+            columnName: tinkoff_token
+        - dropNotNullConstraint:
+            tableName: users
+            columnName: password

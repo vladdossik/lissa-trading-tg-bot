@@ -1,6 +1,5 @@
 package lissa.trading.tg.bot.service.dataInitializer;
 
-import lissa.trading.tg.bot.model.UserEntity;
 import lissa.trading.tg.bot.model.UserStockPrice;
 import lissa.trading.tg.bot.repository.UserRepository;
 import lissa.trading.tg.bot.repository.UserStockPriceRepository;

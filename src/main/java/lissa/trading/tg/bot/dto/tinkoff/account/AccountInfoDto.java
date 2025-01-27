@@ -1,6 +1,6 @@
-package lissa.trading.tg.bot.tinkoff.dto.account;
+package lissa.trading.tg.bot.dto.tinkoff.account;
 
-import lissa.trading.tg.bot.tinkoff.dto.UserAccount;
+import lissa.trading.tg.bot.dto.tinkoff.UserAccount;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

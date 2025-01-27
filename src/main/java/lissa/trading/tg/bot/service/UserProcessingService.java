@@ -1,8 +1,9 @@
 package lissa.trading.tg.bot.service;
 
-import lissa.trading.lissa.auth.lib.security.EncryptionService;
 import lissa.trading.tg.bot.config.TelegramBotNotificationProperties;
+import lissa.trading.tg.bot.dto.tinkoff.stock.TickersDto;
 import lissa.trading.tg.bot.exception.RetrieveFailedException;
+import lissa.trading.tg.bot.feign.UserServiceClient;
 import lissa.trading.tg.bot.model.FavouriteStock;
 import lissa.trading.tg.bot.model.UserEntity;
 import lissa.trading.tg.bot.model.UserStockPrice;
@@ -10,11 +11,8 @@ import lissa.trading.tg.bot.notification.NotificationMessage;
 import lissa.trading.tg.bot.notification.NotificationProducer;
 import lissa.trading.tg.bot.repository.UserRepository;
 import lissa.trading.tg.bot.repository.UserStockPriceRepository;
-import lissa.trading.tg.bot.tinkoff.dto.account.TinkoffTokenDto;
-import lissa.trading.tg.bot.tinkoff.dto.stock.FigiesDto;
-import lissa.trading.tg.bot.tinkoff.dto.stock.StockPrice;
-import lissa.trading.tg.bot.tinkoff.dto.stock.StocksPricesDto;
-import lissa.trading.tg.bot.tinkoff.feign.TinkoffAccountClient;
+import lissa.trading.tg.bot.dto.tinkoff.stock.StockPrice;
+import lissa.trading.tg.bot.dto.tinkoff.stock.StocksPricesDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -36,12 +34,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserProcessingService {
 
-    private static final Set<String> SUPPORTED_INSTRUMENT_TYPES = Set.of("share", "bond");
+    private static final Set<String> SUPPORTED_INSTRUMENT_TYPES = Set.of("share", "bond", "common_share");
 
-    private final UserService userService;
     private final UserRepository userRepository;
     private final UserStockPriceRepository userStockPriceRepository;
-    private final TinkoffAccountClient tinkoffAccountClient;
+    private final UserServiceClient userServiceClient;
     private final TelegramBotNotificationProperties notificationProperties;
     private final NotificationProducer notificationProducer;
 
@@ -61,10 +58,8 @@ public class UserProcessingService {
         log.debug("Processing user with ID {}", userId);
 
         UserEntity user = fetchUserWithFavouriteStocks(userId);
-        setTinkoffTokenForClient(user.getTinkoffToken());
 
-        userService.updateUserFromTinkoffData(user);
-        log.debug("User data updated from Tinkoff for user {}", user.getTelegramNickname());
+        userServiceClient.updateUserFavoriteStocks(user.getExternalId(), new TickersDto());
 
         Set<FavouriteStock> favouriteStocks = user.getFavouriteStocks();
         log.debug("User {} has {} favourite stocks", user.getTelegramNickname(), favouriteStocks.size());
@@ -98,11 +93,6 @@ public class UserProcessingService {
                 .orElseThrow(() -> new IllegalArgumentException("User with ID " + userId + " not found"));
     }
 
-    private void setTinkoffTokenForClient(String encryptedToken) {
-        String decryptedToken = EncryptionService.decrypt(encryptedToken);
-        tinkoffAccountClient.setTinkoffToken(new TinkoffTokenDto(decryptedToken));
-        log.debug("Successfully decrypted token for user");
-    }
 
     private List<FavouriteStock> filterSupportedFavouriteStocks(Set<FavouriteStock> favouriteStocks) {
         return favouriteStocks.stream()
@@ -122,7 +112,7 @@ public class UserProcessingService {
         }
 
         log.debug("Fetching prices for {} figies", figies.size());
-        StocksPricesDto pricesDto = tinkoffAccountClient.getPricesStocksByFigies(new FigiesDto(figies));
+        StocksPricesDto pricesDto = userServiceClient.getUpdatedFavouriteStocksPrices(user.getExternalId());
 
         return pricesDto.getPrices().stream()
                 .filter(stockPrice -> stockPrice.getFigi() != null && stockPrice.getPrice() != null)

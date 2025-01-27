@@ -1,4 +1,4 @@
-package lissa.trading.tg.bot.tinkoff.dto.account;
+package lissa.trading.tg.bot.dto.tinkoff.account;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,6 +9,6 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class SecurityPositionsDto {
-    private List<SecurityPosition> positions;
+public class FavouriteStocksDto {
+    private List<String> favouriteStocks;
 }
