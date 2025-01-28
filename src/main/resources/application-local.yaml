@@ -2,7 +2,7 @@ server:
   port: 8083
 
 bot:
-  token: 8035040685:AAEeh-W-y20WLfJJkH7XnAiKoHXUiLyaKnY
+  token: ${BOT_TOKEN}
   name: "lissa_trading_bot"
 
 spring:
