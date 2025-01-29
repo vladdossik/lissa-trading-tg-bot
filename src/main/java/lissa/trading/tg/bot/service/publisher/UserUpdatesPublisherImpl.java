@@ -27,7 +27,7 @@ public class UserUpdatesPublisherImpl implements UserUpdatesPublisher {
     private final UserMapper userMapper;
     private final FavouriteStockMapper favouriteStockMapper;
 
-    @Value("${integration.rabbit.outbound.user-notifications.exchange}")
+    @Value("${integration.rabbit.inbound.user-service.exchange}")
     private String exchangeName;
 
     @Value("${integration.rabbit.outbound.tg-bot.user-update.routing-key}")
