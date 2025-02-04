@@ -42,29 +42,10 @@ cache:
 integration:
   rest:
     auth-service-url: http://localhost:8081
-    user-service:
-      url: http://localhost:8080
-      token: YzNSaGRHbHpkR2xqY3kxcGJuUmxjbTVoYkMxclpYaz0K
-
-  rabbit:
-    inbound:
-      user-service:
-        favourite-stocks:
-          queue: user-service-favourite-stocks
-          routing-key: userService.favourite-stocks
-        user-update:
-          queue: user-service-user-update
-          routing-key: userService.user-update
-    outbound:
-      tg-bot:
-        favourite-stocks:
-          queue: tg-bot-favorite-stocks
-          routing-key: tgBot.favourite-stocks
-        user-update:
-          queue: tg-bot-user-update
-          routing-key: tgBot.user-update
-      user-notifications:
-        exchange: user-notifications-exchange
+    services:
+      user:
+        url: http://localhost:8080
+        token: ZFhObGNsTmxjblpwWTJVdGFXNTBaWEp1WVd3dGEyVjU=
 
 telegram-bot:
   notification:

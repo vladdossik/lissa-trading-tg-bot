@@ -195,11 +195,15 @@ public class UserServiceImpl implements UserService {
         userEntity.setTelegramNickname(signupRequest.getTelegramNickname());
         userEntity.setTinkoffToken(signupRequest.getTinkoffToken());
         userEntity.setRoles(resolveRoles(signupRequest.getRole()));
-        userEntity.setPassword(encoder.encode(signupRequest.getPassword()));
+        String password = signupRequest.getPassword();
+        if (password != null && !password.isEmpty()) {
+            password = encoder.encode(password);
+        }
         UUID externalId = signupRequest.getExternalId();
         if (externalId == null || externalId.toString().isEmpty()) {
             externalId = UUID.randomUUID();
         }
+        userEntity.setPassword(password);
         userEntity.setExternalId(externalId);
         return userEntity;
     }

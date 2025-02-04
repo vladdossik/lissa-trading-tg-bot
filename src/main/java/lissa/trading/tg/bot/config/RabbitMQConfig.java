@@ -42,7 +42,7 @@ public class RabbitMQConfig {
     @Value("${integration.rabbit.outbound.analytics.exchange}")
     private String analyticsExchange;
 
-    @Value("${integration.rabbit.outbound.user-notifications.exchange}")
+    @Value("${integration.rabbit.inbound.user-service.exchange}")
     private String exchange;
 
     @Value("${integration.rabbit.outbound.analytics.routing-key}")

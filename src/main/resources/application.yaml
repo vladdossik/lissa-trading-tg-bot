@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: local
+    active: prod
 
 integration:
   rabbit:
@@ -12,6 +12,14 @@ integration:
         news:
           queue: analytics-response-news-queue
           routing-key: response.news
+      user-service:
+        exchange: user-notifications-exchange
+        favourite-stocks:
+          queue: user-service-favourite-stocks
+          routing-key: userService.favourite-stocks
+        user-update:
+          queue: user-service-user-update
+          routing-key: userService.user-update
     outbound:
       notification:
         queue: notification-queue
@@ -19,3 +27,10 @@ integration:
         exchange: analytics-exchange
         queue: analytics-request-queue
         routing-key: request
+      tg-bot:
+        favourite-stocks:
+          queue: tg-bot-favorite-stocks
+          routing-key: tgBot.favourite-stocks
+        user-update:
+          queue: tg-bot-user-update
+          routing-key: tgBot.user-update

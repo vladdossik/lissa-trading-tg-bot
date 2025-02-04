@@ -43,10 +43,10 @@ cache:
 integration:
   rest:
     auth-service-url: ${AUTH_SERVICE_URL}
-    user-service:
-      url: ${USER_SERVICE_URL}
-      token: ${USER_SERVICE_TOKEN}
-
+    services:
+      user:
+        url: ${USER_SERVICE_URL}
+        token: ${USER_SERVICE_TOKEN}
 
 telegram-bot:
   notification:
