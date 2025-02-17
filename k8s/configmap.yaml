@@ -15,6 +15,7 @@ data:
   SPRING_RABBITMQ_PASSWORD: "secure_password" # Пароль нового пользователя
   AUTH_SERVICE_URL: "http://lissa-trading-auth-service:8081"
   USER_SERVICE_URL: "http://lissa-trading-user-service:8080"
+  LOKI_URL: "http://loki:3100"
   CACHE_CAFFEINE_EXPIRE_AFTER_WRITE: "5" # в минутах
   CACHE_CAFFEINE_MAXIMUM_SIZE: "100"
   SPRING_PROFILES_ACTIVE: "prod" # Установка активного профиля

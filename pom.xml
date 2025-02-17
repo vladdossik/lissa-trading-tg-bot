@@ -117,7 +117,7 @@
         <dependency>
             <groupId>com.github.vladdossik</groupId>
             <artifactId>lissa-trading-auth-lib</artifactId>
-            <version>v0.0.3</version>
+            <version>v0.0.5</version>
         </dependency>
 
         <!-- Jackson for JSON Processing -->
@@ -181,6 +181,20 @@
             <groupId>org.jeasy</groupId>
             <artifactId>easy-random-core</artifactId>
             <version>5.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.loki4j</groupId>
+            <artifactId>loki-logback-appender</artifactId>
+            <version>1.6.0</version>
         </dependency>
     </dependencies>
 

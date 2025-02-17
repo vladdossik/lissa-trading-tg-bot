@@ -32,7 +32,7 @@ spring:
 
 security:
   internal:
-    token: SXE2VnU4Tno3WGEzUmw5Q201WWJUYzJXcERmNE9qNVpmR24xS2gz
+    token: ZEdkQ2IzUXRhVzUwWlhKdVlXd3RhMlY1
 
 cache:
   caffeine:

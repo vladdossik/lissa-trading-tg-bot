@@ -1,4 +1,6 @@
 spring:
+  application:
+    name: tg-bot-service
   profiles:
     active: prod
 
@@ -34,3 +36,13 @@ integration:
         user-update:
           queue: tg-bot-user-update
           routing-key: tgBot.user-update
+
+management:
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: "/v1/internal/actuator"
